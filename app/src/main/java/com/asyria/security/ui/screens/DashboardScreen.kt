@@ -1150,13 +1150,30 @@ fun SentinelChatOverlay(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text(
-                        text = "S.E.N.T.I.N.E.L",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = NeonBlue,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 2.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "S.E.N.T.I.N.E.L",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = NeonBlue,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 2.sp
+                        )
+                        if (isAiLoading) {
+                            val pulseAlpha by infiniteTransition.animateFloat(
+                                initialValue = 0.4f,
+                                targetValue = 1f,
+                                animationSpec = infiniteRepeatable(tween(800, easing = EaseInOutSine), RepeatMode.Reverse),
+                                label = "NeuralPulse"
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = CyberCyan.copy(alpha = pulseAlpha),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                     Text(
                         text = if (isAiLoading) "NEURAL LINK ACTIVE..." else "SECURE CHANNEL",
                         style = MaterialTheme.typography.labelSmall,
