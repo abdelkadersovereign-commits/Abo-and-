@@ -182,3 +182,4 @@ class DashboardViewModel : ViewModel() {
     fun startScan() {
         runSystemAudit()
     }
+}

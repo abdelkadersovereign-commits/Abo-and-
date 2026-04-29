@@ -1120,6 +1120,7 @@ fun SentinelChatOverlay(
 ) {
     var messageText by remember { mutableStateOf("") }
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val infiniteTransition = rememberInfiniteTransition(label = "SentinelAnim")
 
     LaunchedEffect(chatHistory.size) {
         if (chatHistory.isNotEmpty()) {
@@ -1499,6 +1500,9 @@ fun AzkarCard(arabic: String, english: String) {
         }
     }
 }
+
+@Composable
+fun MythicalIconView(type: MythicalIcon) {
     val infiniteTransition = rememberInfiniteTransition(label = "IconAnim")
     
     when (type) {
@@ -1778,12 +1782,12 @@ fun HeaderSection(score: Int, onSettingsClick: () -> Unit) {
     ) {
         Column {
             Text(
-                text = "Welcome, Sentinel",
+                text = "OPERATOR: ACTIVE",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextGray
             )
             Text(
-                text = "System Online",
+                text = "Sentinel Core",
                 style = MaterialTheme.typography.titleLarge,
                 color = OffWhite,
                 fontWeight = FontWeight.Bold
