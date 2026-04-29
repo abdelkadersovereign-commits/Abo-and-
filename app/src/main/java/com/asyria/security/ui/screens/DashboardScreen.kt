@@ -368,7 +368,7 @@ fun DashboardScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // 4-Module Grid
+                // 6-Module Grid
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -399,6 +399,28 @@ fun DashboardScreen(
                     }
                     item { 
                         ModuleCard(
+                            "Spiritual Hub", 
+                            "Damascus Time",
+                            shadowOffset,
+                            MythicalIcon.Spiritual,
+                            tiltX = roll,
+                            tiltY = pitch,
+                            onClick = { prayerViewModel.setHubOpen(true) }
+                        ) 
+                    }
+                    item { 
+                        ModuleCard(
+                            "Sentinel AI", 
+                            "Ready for Query",
+                            shadowOffset,
+                            MythicalIcon.Sentinel,
+                            tiltX = roll,
+                            tiltY = pitch,
+                            onClick = { showAIChat = true }
+                        ) 
+                    }
+                    item { 
+                        ModuleCard(
                             "Threat Analysis", 
                             "Shield Check",
                             shadowOffset,
@@ -419,13 +441,13 @@ fun DashboardScreen(
                     }
                     item { 
                         ModuleCard(
-                            "Spiritual Hub", 
-                            "Adhan & Azkar",
+                            "System Settings", 
+                            "API & Themes",
                             shadowOffset,
-                            MythicalIcon.Spiritual,
+                            MythicalIcon.Settings,
                             tiltX = roll,
                             tiltY = pitch,
-                            onClick = { prayerViewModel.setHubOpen(true) }
+                            onClick = { viewModel.toggleSettings(true) }
                         ) 
                     }
                 }
@@ -684,7 +706,7 @@ fun MetricItem(label: String, value: String) {
 }
 
 enum class MythicalIcon {
-    Network, Threats, Files, Spiritual
+    Network, Threats, Files, Spiritual, Settings, Sentinel
 }
 
 @Composable
@@ -1128,6 +1150,14 @@ fun SecuritySettingsPanel(
     onClose: () -> Unit
 ) {
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(300)
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
     
     Box(
         modifier = Modifier
@@ -1160,14 +1190,18 @@ fun SecuritySettingsPanel(
                     color = TextGray
                 )
                 
-                TextField(
+                OutlinedTextField(
                     value = apiKey,
                     onValueChange = onApiKeyChange,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().androidx.compose.ui.focus.focusRequester(focusRequester),
                     visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = GlassWhite,
-                        unfocusedContainerColor = GlassWhite
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CyberCyan,
+                        unfocusedBorderColor = GlassBorder,
+                        focusedTextColor = OffWhite,
+                        unfocusedTextColor = OffWhite,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
                     )
                 )
                 
@@ -1462,135 +1496,28 @@ fun MythicalIconView(type: MythicalIcon) {
                 )
             }
         }
-    }
-}
-
-@Composable
-fun AIChatOverlay(
-    uiState: DashboardUiState,
-    onClose: () -> Unit,
-    onSendMessage: (String) -> Unit,
-    onApiKeyChange: (String) -> Unit
-) {
-    var messageText by remember { mutableStateOf("") }
-
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = VoidBlack.copy(alpha = 0.98f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(24.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "S.E.N.T.I.N.E.L AI",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = CyberCyan,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = OffWhite)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // API Key Section
-            OutlinedTextField(
-                value = uiState.geminiApiKey,
-                onValueChange = onApiKeyChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Neural Core API Key", color = TextGray) },
-                placeholder = { Text("Paste Gemini API Key here...", color = TextGray.copy(alpha = 0.5f)) },
-                trailingIcon = { Icon(Icons.Default.VpnKey, contentDescription = null, tint = TextGray) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = CyberCyan,
-                    unfocusedBorderColor = GlassBorder,
-                    focusedTextColor = OffWhite,
-                    unfocusedTextColor = OffWhite
-                ),
-                shape = RoundedCornerShape(12.dp)
+        MythicalIcon.Settings -> {
+            val gearRot by infiniteTransition.animateFloat(
+                initialValue = 0f, targetValue = 360f,
+                animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing)), label = "Gear"
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Chat History
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                    .background(GlassWhite, RoundedCornerShape(16.dp))
-            ) {
-                androidx.compose.foundation.lazy.LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(uiState.chatHistory.size) { index ->
-                        val chat = uiState.chatHistory[index]
-                        ChatBubble(chat)
-                    }
-                }
-                
-                if (uiState.isAiLoading) {
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
-                        color = CyberCyan,
-                        trackColor = Color.Transparent
-                    )
-                }
+            Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Settings, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(32.dp).graphicsLayer { rotationZ = gearRot })
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Message Input
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextField(
-                    value = messageText,
-                    onValueChange = { messageText = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .border(1.dp, GlassBorder, RoundedCornerShape(24.dp)),
-                    placeholder = { Text("Query Sentinel...", color = TextGray) },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = GlassWhite,
-                        unfocusedContainerColor = GlassWhite,
-                        cursorColor = CyberCyan,
-                        focusedTextColor = OffWhite,
-                        unfocusedTextColor = OffWhite,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                IconButton(
-                    onClick = {
-                        if (messageText.isNotBlank()) {
-                            onSendMessage(messageText)
-                            messageText = ""
-                        }
-                    },
-                    modifier = Modifier.background(CyberCyan, CircleShape)
-                ) {
-                    Icon(Icons.Default.Send, contentDescription = "Send", tint = VoidBlack)
-                }
+        }
+        MythicalIcon.Sentinel -> {
+            val pulse by infiniteTransition.animateFloat(
+                initialValue = 0.5f, targetValue = 1f,
+                animationSpec = infiniteRepeatable(tween(1000, easing = EaseInOutSine), RepeatMode.Reverse), label = "AIPulse"
+            )
+            Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = NeonBlue, modifier = Modifier.size(32.dp).graphicsLayer { scaleX = pulse; scaleY = pulse })
             }
-            
-            Spacer(modifier = Modifier.navigationBarsPadding())
         }
     }
 }
+
+// Removed unused AIChatOverlay
 
 @Composable
 fun HeaderSection(score: Int, onSettingsClick: () -> Unit, isAiLoading: Boolean = false) {

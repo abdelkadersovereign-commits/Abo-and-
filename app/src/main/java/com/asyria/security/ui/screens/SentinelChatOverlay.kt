@@ -46,16 +46,18 @@ fun SentinelChatOverlay(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.9f))
-            .clickable(onClick = onClose),
-        contentAlignment = Alignment.BottomCenter
+            .clickable(onClick = onClose)
+            .imePadding()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.96f)
                 .fillMaxHeight(0.85f)
-                .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
+                .clip(RoundedCornerShape(32.dp))
                 .background(VoidBlack)
-                .border(1.dp, GlassBorder, RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
+                .border(2.dp, CyberCyan.copy(alpha=0.3f), RoundedCornerShape(32.dp))
                 .clickable(enabled = false) {}
                 .padding(24.dp)
         ) {

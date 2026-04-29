@@ -3,10 +3,10 @@ package com.asyria.security.ui.theme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 
-val CyberCyan = Color(0xFF22D3EE)
-val NeonBlue = Color(0xFF3B82F6)
+val CyberCyan = Color(0xFF00E5FF)
+val NeonBlue = Color(0xFF00E5FF)
 val NeuralPurple = Color(0xFF8B5CF6)
-val VoidBlack = Color(0xFF010103)
+val VoidBlack = Color(0xFF0D1117)
 val SurfaceDark = Color(0xFF0A0A0C)
 val OffWhite = Color(0xFFF1F5F9)
 val TextGray = Color(0xFF94A3B8)

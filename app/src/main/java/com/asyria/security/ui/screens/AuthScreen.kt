@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,11 +25,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,12 +41,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.asyria.security.R
 import com.asyria.security.data.SessionManager
 import com.asyria.security.ui.theme.*
-import kotlinx.coroutines.flow.collect
-import androidx.compose.material.icons.filled.NightsStay
-import androidx.compose.material.icons.filled.WbSunny
-
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 
 @Composable
 fun AuthScreen(
@@ -76,21 +73,23 @@ fun AuthScreen(
     SentinelTheme(mode = uiState.themeMode) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            containerColor = Color.Transparent,
+            containerColor = VoidBlack,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { padding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
                     .padding(padding)
             ) {
-                // Animated Mesh Gradient Background (Only in STANDARD mode)
+                // Background
                 if (uiState.themeMode == ThemeMode.STANDARD) {
                     AnimatedBackground()
                 }
 
-                LoginFormScreen(uiState, viewModel, haptic)
+                // Centered Login Form
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    LoginFormScreen(uiState, viewModel, haptic)
+                }
 
                 // Zen Toggle
                 Box(
@@ -113,9 +112,9 @@ fun AuthScreen(
                     }
                 }
                 
-                // Footer (Fixed at the bottom, not moved by IME if we wrap it separately)
+                // Footer
                 Text(
-                    text = stringResource(R.string.designer_name),
+                    text = "A.SYRIA SECURITY SUITE",
                     color = TextGray.copy(alpha = 0.5f),
                     fontSize = 10.sp,
                     letterSpacing = 4.sp,
@@ -149,7 +148,7 @@ private fun AnimatedBackground() {
                 val brush = Brush.linearGradient(
                     colors = listOf(
                         NeuralPurple.copy(alpha = 0.1f),
-                        NeonBlue.copy(alpha = 0.1f),
+                        NeonBlue.copy(alpha = 0.15f),
                         VoidBlack
                     ),
                     start = androidx.compose.ui.geometry.Offset(0f, 0f),
@@ -165,34 +164,40 @@ private fun AnimatedBackground() {
 fun LoginFormScreen(
     uiState: AuthUiState,
     viewModel: AuthViewModel,
-    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback
+    haptic: HapticFeedback
 ) {
+    val emailFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(uiState.isLogin) {
+        kotlinx.coroutines.delay(300)
+        emailFocusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .imePadding()
-            .padding(24.dp),
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Glassmorphism Login Card
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .border(1.dp, GlassBorder, RoundedCornerShape(24.dp)),
+                .border(2.dp, CyberCyan.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
             shape = RoundedCornerShape(24.dp),
-            color = GlassWhite,
-            tonalElevation = 8.dp
+            color = VoidBlack.copy(alpha = 0.8f)
         ) {
             Column(
                 modifier = Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = if (uiState.isLogin) stringResource(R.string.login) else stringResource(R.string.sign_up),
+                    text = if (uiState.isLogin) "LOGIN TO HUB" else "CREATE NEURAL ID",
                     style = MaterialTheme.typography.titleLarge,
-                    color = OffWhite,
+                    color = CyberCyan,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp
                 )
@@ -202,10 +207,11 @@ fun LoginFormScreen(
                 CyberTextField(
                     value = uiState.email,
                     onValueChange = { viewModel.onEmailChange(it) },
-                    label = stringResource(R.string.email_label),
+                    label = "Operator Email",
                     icon = Icons.Default.Email,
                     isError = uiState.emailError != null,
-                    errorMessage = uiState.emailError
+                    errorMessage = uiState.emailError,
+                    modifier = Modifier.androidx.compose.ui.focus.focusRequester(emailFocusRequester)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -214,7 +220,7 @@ fun LoginFormScreen(
                 CyberTextField(
                     value = uiState.password,
                     onValueChange = { viewModel.onPasswordChange(it) },
-                    label = stringResource(R.string.password_label),
+                    label = "Encryption Key",
                     icon = Icons.Default.Lock,
                     isPassword = true,
                     passwordVisible = passwordVisible,
@@ -233,7 +239,7 @@ fun LoginFormScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
-                        .clip(RoundedCornerShape(16.dp)),
+                        .clip(RoundedCornerShape(12.dp)),
                     colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
                     enabled = !uiState.isLoading
                 ) {
@@ -244,58 +250,30 @@ fun LoginFormScreen(
                             text = if (uiState.isLogin) "INITIALIZE" else "REGISTER",
                             color = VoidBlack,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
+                            letterSpacing = 2.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = if (uiState.isLogin) "Need new credentials? Create Neural ID" else "Return to Authorization",
+                    text = if (uiState.isLogin) "Need new credentials? Create ID" else "Return to Login",
                     color = TextGray,
                     fontSize = 12.sp,
-                    modifier = Modifier.clickable { 
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { 
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.toggleAuthMode() 
                     }
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Google Sign In
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp))
-                .clickable { 
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    viewModel.onGoogleSignInSuccess() 
-                },
-            color = GlassWhite
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.google_sign_in),
-                    color = OffWhite,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CyberTextField(
     value: String,
@@ -306,19 +284,14 @@ fun CyberTextField(
     passwordVisible: Boolean = false,
     onTogglePassword: () -> Unit = {},
     isError: Boolean = false,
-    errorMessage: String? = null
+    errorMessage: String? = null,
+    modifier: Modifier = Modifier
 ) {
-    Column {
-        TextField(
+    Column(modifier = modifier.fillMaxWidth()) {
+        OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(
-                    width = 1.dp,
-                    color = if (isError) RiskRed else GlassBorder,
-                    shape = RoundedCornerShape(16.dp)
-                ),
+            modifier = Modifier.fillMaxWidth(),
             label = { Text(label, color = TextGray) },
             leadingIcon = { Icon(icon, contentDescription = null, tint = if (isError) RiskRed else CyberCyan) },
             trailingIcon = {
@@ -332,21 +305,20 @@ fun CyberTextField(
                     }
                 }
             },
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent,
-                unfocusedContainerColor = Color.Transparent,
-                errorContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                errorIndicatorColor = Color.Transparent,
-                cursorColor = CyberCyan,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = CyberCyan,
+                unfocusedBorderColor = GlassBorder,
+                errorBorderColor = RiskRed,
                 focusedTextColor = OffWhite,
-                unfocusedTextColor = OffWhite
+                unfocusedTextColor = OffWhite,
+                cursorColor = CyberCyan,
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent
             ),
             visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Email),
             isError = isError,
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(12.dp)
         )
         if (isError && errorMessage != null) {
             Text(
