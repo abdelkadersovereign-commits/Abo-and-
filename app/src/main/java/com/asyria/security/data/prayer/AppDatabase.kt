@@ -12,7 +12,7 @@ interface PrayerDao {
     suspend fun insertPrayerTimes(prayerTimes: PrayerTimesEntity)
 }
 
-@Database(entities = [PrayerTimesEntity::class], version = 1)
+@Database(entities = [PrayerTimesEntity::class], version = 1, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun prayerDao(): PrayerDao
 
