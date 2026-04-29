@@ -19,10 +19,10 @@ jobs:
         distribution: 'temurin'
         cache: gradle
 
-    - name: List Files
-      run: |
-        ls -R
-        pwd
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v3
+      with:
+        gradle-version: 8.1
 
     - name: Build with Gradle
       run: |
@@ -30,7 +30,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
         else
-          echo "gradlew not found, using system gradle"
+          echo "gradlew not found, using gradle installed by action"
           gradle assembleDebug
         fi
 
