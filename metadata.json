@@ -1,0 +1,6 @@
+{
+  "name": "A.SYRIA",
+  "description": "Cyber-noir native Android application for advanced security monitoring and neural analysis.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": []
+}

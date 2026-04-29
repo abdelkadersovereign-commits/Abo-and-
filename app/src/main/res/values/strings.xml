@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">A.SYRIA</string>
+    <string name="login">Login</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="email_label">Neural ID (Email)</string>
+    <string name="password_label">Access Key (Password)</string>
+    <string name="google_sign_in">Continue with Google</string>
+    <string name="designer_name">ABOUDA.AL.SHEKH.YOSSEF</string>
+    <string name="welcome_sentinel">Welcome, Sentinel</string>
+</resources>
