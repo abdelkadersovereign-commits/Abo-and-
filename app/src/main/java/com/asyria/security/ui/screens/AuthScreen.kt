@@ -130,7 +130,7 @@ fun AuthScreen(
 }
 
 @Composable
-fun AnimatedBackground() {
+private fun AnimatedBackground() {
     val infiniteTransition = rememberInfiniteTransition(label = "Background")
     val animValue by infiniteTransition.animateFloat(
         initialValue = 0f,

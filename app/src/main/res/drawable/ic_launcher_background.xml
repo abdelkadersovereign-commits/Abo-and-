@@ -5,16 +5,28 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <path
-        android:fillColor="#0D0D0D"
+        android:fillColor="#0A0A0A"
         android:pathData="M0,0h108v108h-108z" />
+    <!-- Hexagon Pattern -->
     <path
-        android:pathData="M10,10l5,0l2.5,4.33l-2.5,4.33l-5,0l-2.5,-4.33z"
-        android:strokeWidth="0.5"
-        android:strokeColor="#1AFFFFFF" />
-    <!-- Pattern simplified for vector efficiency -->
+        android:fillColor="#1A1A1A"
+        android:pathData="M18,10L30,10L36,20L30,30L18,30L12,20Z" />
     <path
-        android:pathData="M0,0 L108,0 L108,108 L0,108 Z"
-        android:fillColor="#00000000"
-        android:strokeWidth="1"
-        android:strokeColor="#121212" />
+        android:fillColor="#1A1A1A"
+        android:pathData="M54,10L66,10L72,20L66,30L54,30L48,20Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M90,10L102,10L108,20L102,30L90,30L84,20Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M36,40L48,40L54,50L48,60L36,60L30,50Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M72,40L84,40L90,50L84,60L72,60L66,50Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M18,70L30,70L36,80L30,90L18,90L12,80Z" />
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M54,70L66,70L72,80L66,90L54,90L48,80Z" />
 </vector>
