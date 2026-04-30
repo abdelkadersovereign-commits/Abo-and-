@@ -1,7 +1,7 @@
 package com.asyria.security
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +16,7 @@ import com.asyria.security.ui.navigation.NavGraph
 import com.asyria.security.ui.navigation.Screen
 import com.asyria.security.ui.theme.SentinelTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

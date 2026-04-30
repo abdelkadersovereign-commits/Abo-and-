@@ -1,10 +1,7 @@
 package com.asyria.security.ui.screens
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -20,32 +17,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.asyria.security.ui.theme.*
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
 @Composable
-fun SentinelChatOverlay(
-    chatHistory: List<ChatMessage>,
-    isAiLoading: Boolean,
+fun SentinelAIOverlay(
+    uiState: DashboardUiState,
     onSendMessage: (String) -> Unit,
     onClose: () -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val haptic = LocalHapticFeedback.current
     val infiniteTransition = rememberInfiniteTransition(label = "SentinelAnim")
 
-    LaunchedEffect(chatHistory.size) {
-        if (chatHistory.isNotEmpty()) {
-            listState.animateScrollToItem(chatHistory.size - 1)
+    LaunchedEffect(uiState.chatHistory.size) {
+        if (uiState.chatHistory.isNotEmpty()) {
+            listState.animateScrollToItem(uiState.chatHistory.size - 1)
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f))
+            .background(VoidBlack.copy(alpha = 0.9f))
             .clickable(onClick = onClose)
             .imePadding()
             .padding(16.dp),
@@ -69,13 +68,13 @@ fun SentinelChatOverlay(
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "S.E.N.T.I.N.E.L",
+                            text = "SENTINEL AI CORE",
                             style = MaterialTheme.typography.titleLarge,
-                            color = NeonBlue,
+                            color = CyberCyan,
                             fontWeight = FontWeight.Black,
                             letterSpacing = 2.sp
                         )
-                        if (isAiLoading) {
+                        if (uiState.isAiLoading) {
                             val pulseAlpha by infiniteTransition.animateFloat(
                                 initialValue = 0.4f,
                                 targetValue = 1f,
@@ -92,9 +91,9 @@ fun SentinelChatOverlay(
                         }
                     }
                     Text(
-                        text = if (isAiLoading) "NEURAL LINK ACTIVE..." else "SECURE CHANNEL",
+                        text = if (uiState.isAiLoading) "SYNCHRONIZING..." else "SECURE NEURAL LINK",
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isAiLoading) CyberCyan else TextGray
+                        color = if (uiState.isAiLoading) CyberCyan else TextGray
                     )
                 }
                 IconButton(onClick = onClose) {
@@ -107,11 +106,10 @@ fun SentinelChatOverlay(
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                items(chatHistory.size) { index ->
-                    val msg = chatHistory[index]
-                    ChatBubble(msg)
+                items(uiState.chatHistory.size) { index ->
+                    GeminiBubble(uiState.chatHistory[index])
                 }
             }
 
@@ -120,7 +118,8 @@ fun SentinelChatOverlay(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(GlassWhite, RoundedCornerShape(16.dp))
+                    .background(GlassWhite, RoundedCornerShape(20.dp))
+                    .border(1.dp, GlassBorder, RoundedCornerShape(20.dp))
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -128,13 +127,13 @@ fun SentinelChatOverlay(
                     value = messageText,
                     onValueChange = { messageText = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Ask Sentinel...", color = TextGray) },
+                    placeholder = { Text("Query AI Intel...", color = TextGray) },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = NeonBlue,
+                        cursorColor = CyberCyan,
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White
                     ),
@@ -143,11 +142,13 @@ fun SentinelChatOverlay(
                 IconButton(
                     onClick = {
                         if (messageText.isNotBlank()) {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onSendMessage(messageText)
                             messageText = ""
                         }
                     },
-                    colors = IconButtonDefaults.iconButtonColors(containerColor = NeonBlue)
+                    colors = IconButtonDefaults.iconButtonColors(containerColor = CyberCyan),
+                    modifier = Modifier.padding(4.dp)
                 ) {
                     Icon(Icons.Default.Send, contentDescription = null, tint = VoidBlack)
                 }
@@ -157,27 +158,43 @@ fun SentinelChatOverlay(
 }
 
 @Composable
-fun ChatBubble(message: ChatMessage) {
-    if (message.text.isBlank() && !message.isUser) return
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start
-    ) {
-        Surface(
-            color = if (message.isUser) GlassWhite else NeonBlue.copy(alpha = 0.1f),
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (message.isUser) 16.dp else 4.dp,
-                bottomEnd = if (message.isUser) 4.dp else 16.dp
-            ),
-            border = BorderStroke(1.dp, if (message.isUser) GlassBorder else NeonBlue.copy(alpha = 0.3f))
+fun GeminiBubble(message: ChatMessage) {
+    val alignment = if (message.isUser) Alignment.End else Alignment.Start
+    val bgColor = if (message.isUser) GlassWhite else CyberCyan.copy(alpha = 0.05f)
+    val borderColor = if (message.isUser) GlassBorder else CyberCyan.copy(alpha = 0.3f)
+    val textColor = if (message.isUser) OffWhite else CyberCyan
+
+    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = alignment) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = 280.dp)
+                .background(bgColor, RoundedCornerShape(
+                    topStart = 20.dp,
+                    topEnd = 20.dp,
+                    bottomStart = if (message.isUser) 20.dp else 4.dp,
+                    bottomEnd = if (message.isUser) 4.dp else 20.dp
+                ))
+                .border(1.dp, borderColor, RoundedCornerShape(
+                    topStart = 20.dp,
+                    topEnd = 20.dp,
+                    bottomStart = if (message.isUser) 20.dp else 4.dp,
+                    bottomEnd = if (message.isUser) 4.dp else 20.dp
+                ))
+                .padding(16.dp)
         ) {
             Text(
+                text = if (message.isUser) "OPERATOR" else "SENTINEL",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (message.isUser) TextGray else CyberCyan,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                 text = message.text,
-                modifier = Modifier.padding(12.dp),
                 color = Color.White,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
+                lineHeight = 20.sp
             )
         }
     }

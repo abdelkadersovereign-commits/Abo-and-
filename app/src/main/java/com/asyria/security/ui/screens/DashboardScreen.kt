@@ -8,6 +8,7 @@ import android.content.Context
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import android.widget.Toast
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.focus.FocusRequester
@@ -88,6 +89,7 @@ fun Modifier.cyberInteractive(
     onClick: () -> Unit,
     glowColor: Color = CyberCyan
 ): Modifier {
+    val haptic = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
@@ -142,7 +144,10 @@ fun Modifier.cyberInteractive(
         .clickable(
             interactionSource = interactionSource,
             indication = null,
-            onClick = onClick
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            }
         )
 }
 
@@ -153,7 +158,23 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val prayerState by prayerViewModel.uiState.collectAsState()
-    var showAIChat by remember { mutableStateOf(false) }
+    
+    val themeMode = when(uiState.themeLevel) {
+        ThemeLevel.CYBER_NOIR -> ThemeMode.STANDARD
+        ThemeLevel.WARM_STEALTH -> ThemeMode.WARM_STEALTH
+    }
+
+    SentinelTheme(mode = themeMode) {
+        DashboardContent(uiState, viewModel, prayerState)
+    }
+}
+
+@Composable
+fun DashboardContent(
+    uiState: DashboardUiState,
+    viewModel: DashboardViewModel,
+    prayerState: PrayerUiState
+) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
@@ -257,18 +278,26 @@ fun DashboardScreen(
             .background(VoidBlack)
     ) {
         // 1. Neural Particle & Matrix Background Layer
-        NeuralBackground(
-            status = if (prayerState.isHubOpen) SystemStatus.SCANNING else uiState.status, 
-            tiltX = roll, 
-            tiltY = pitch, 
-            bootComplete = bootComplete,
-            isSpiritualMode = prayerState.isHubOpen
+        val atmosphereAlpha by animateFloatAsState(
+            targetValue = if (uiState.isStealthMode) 0.1f else 1f,
+            animationSpec = tween(1000),
+            label = "StealthAlpha"
         )
+        
+        Box(modifier = Modifier.alpha(atmosphereAlpha)) {
+            NeuralBackground(
+                status = if (prayerState.isHubOpen) SystemStatus.SCANNING else uiState.status, 
+                tiltX = roll, 
+                tiltY = pitch, 
+                bootComplete = bootComplete,
+                isSpiritualMode = prayerState.isHubOpen
+            )
+        }
 
         // 2. Atmospheric Edge Glow
         val edgePulse by infiniteTransition.animateFloat(
             initialValue = 0.1f,
-            targetValue = 0.4f,
+            targetValue = if (uiState.isStealthMode) 0.15f else 0.4f,
             animationSpec = infiniteRepeatable(tween(2000, easing = EaseInOutSine), RepeatMode.Reverse),
             label = "EdgeGlow"
         )
@@ -362,10 +391,10 @@ fun DashboardScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
                             text = when {
-                                prayerState.isHubOpen -> "SPIRITUAL SYNC"
-                                uiState.status == SystemStatus.SECURE -> "SYSTEM SECURE"
-                                uiState.status == SystemStatus.SCANNING -> "SCANNING PROTOCOLS..."
-                                else -> "THREAT DETECTED"
+                                uiState.isSpiritualHubOpen -> if (uiState.language == "EN") "SPIRITUAL SYNC" else "مزامنة روحانية"
+                                uiState.status == SystemStatus.SECURE -> if (uiState.language == "EN") "SYSTEM SECURE" else "النظام آمن"
+                                uiState.status == SystemStatus.SCANNING -> if (uiState.language == "EN") "SCANNING PROTOCOLS..." else "فحص البروتوكولات..."
+                                else -> if (uiState.language == "EN") "THREAT DETECTED" else "تم كشف تهديد"
                             },
                             style = MaterialTheme.typography.titleMedium,
                             color = statusColor,
@@ -389,124 +418,87 @@ fun DashboardScreen(
                             alpha = bootAlpha
                         }
                 ) {
-                    item { 
-                        ModuleCard(
-                            "Network Scanner", 
-                            "Radar Active",
-                            shadowOffset,
-                            MythicalIcon.Network,
-                            tiltX = roll,
-                            tiltY = pitch,
-                            onClick = {
-                                if (hasCameraPermission) {
-                                    viewModel.setScannerOpen(true)
-                                } else {
-                                    permissionLauncher.launch(Manifest.permission.CAMERA)
-                                }
+                    val modules = listOf(
+                        Triple("Network Scanner", "Topology Map", MythicalIcon.Network) to { viewModel.toggleNetworkScanner(true) },
+                        Triple("Spiritual Hub", "Neural Balance", MythicalIcon.Spiritual) to { viewModel.toggleSpiritualHub(true) },
+                        Triple("Sentinel AI", "Core Intel", MythicalIcon.Sentinel) to { viewModel.toggleAiOverlay(true) },
+                        Triple("Threat Analysis", "System Integrity", MythicalIcon.Threats) to { viewModel.setScannerOpen(true, ScanType.THREAT) },
+                        Triple("File Guardian", "Vault Protocol", MythicalIcon.Files) to { viewModel.toggleFileGuardian(true) },
+                        Triple("System Settings", "Config & Keys", MythicalIcon.Settings) to { viewModel.toggleSettings(true) }
+                    )
+
+                    items(modules.size) { index ->
+                        val (info, action) = modules[index]
+                        
+                        var visible by remember { mutableStateOf(false) }
+                        LaunchedEffect(bootComplete) {
+                            if (bootComplete) {
+                                delay(index * 100L)
+                                visible = true
                             }
-                        ) 
-                    }
-                    item { 
-                        ModuleCard(
-                            "Spiritual Hub", 
-                            "Damascus Time",
-                            shadowOffset,
-                            MythicalIcon.Spiritual,
-                            tiltX = roll,
-                            tiltY = pitch,
-                            onClick = { prayerViewModel.setHubOpen(true) }
-                        ) 
-                    }
-                    item { 
-                        ModuleCard(
-                            "Sentinel AI", 
-                            "Ready for Query",
-                            shadowOffset,
-                            MythicalIcon.Sentinel,
-                            tiltX = roll,
-                            tiltY = pitch,
-                            onClick = { showAIChat = true }
-                        ) 
-                    }
-                    item { 
-                        ModuleCard(
-                            "Threat Analysis", 
-                            "Shield Check",
-                            shadowOffset,
-                            MythicalIcon.Threats,
-                            tiltX = roll,
-                            tiltY = pitch
-                        ) 
-                    }
-                    item { 
-                        ModuleCard(
-                            "File Guardian", 
-                            "Folder Lock",
-                            shadowOffset,
-                            MythicalIcon.Files,
-                            tiltX = roll,
-                            tiltY = pitch
-                        ) 
-                    }
-                    item { 
-                        ModuleCard(
-                            "System Settings", 
-                            "API & Themes",
-                            shadowOffset,
-                            MythicalIcon.Settings,
-                            tiltX = roll,
-                            tiltY = pitch,
-                            onClick = { viewModel.toggleSettings(true) }
-                        ) 
+                        }
+
+                        AnimatedVisibility(
+                            visible = visible,
+                            enter = fadeIn(tween(500)) + scaleIn(tween(500), initialScale = 0.8f),
+                            exit = fadeOut()
+                        ) {
+                            ModuleCard(
+                                info.first, 
+                                info.second,
+                                shadowOffset,
+                                info.third,
+                                tiltX = roll,
+                                tiltY = pitch,
+                                onClick = action
+                            )
+                        }
                     }
                 }
                 
                 // Sentinel Status Metrics Bar
-                SentinelMetricsBar()
+                AnimatedVisibility(visible = !uiState.isStealthMode) {
+                    SentinelMetricsBar()
+                }
                 
                 Spacer(modifier = Modifier.height(60.dp))
             }
         }
 
-        // Signature with Shimmer
-        val shimmerTranslate by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1000f,
-            animationSpec = infiniteRepeatable(tween(5000, easing = LinearEasing)),
-            label = "SignatureShimmer"
-        )
-
+        // Overlays Layer
         if (uiState.isScannerOpen) {
-            ScannerOverlay(
-                onBarcodeDetected = { url ->
-                    viewModel.analyzeScannedLink(url)
-                },
+            ScannerScreen(
+                type = uiState.activeScanType,
                 onClose = { viewModel.setScannerOpen(false) }
             )
         }
 
-        if (prayerState.isHubOpen) {
-            SpiritualHubOverlay(
-                state = prayerState,
-                onClose = { prayerViewModel.setHubOpen(false) }
+        if (uiState.isAiOverlayOpen) {
+            SentinelAIOverlay(
+                uiState = uiState,
+                onSendMessage = { viewModel.sendMessageToSentinel(it) },
+                onClose = { viewModel.toggleAiOverlay(false) }
             )
         }
 
+        if (uiState.isSpiritualHubOpen) {
+            SpiritualHub(onClose = { viewModel.toggleSpiritualHub(false) })
+        }
+
+        if (uiState.isNetworkScannerOpen) {
+            NetworkScannerOverlay(onClose = { viewModel.toggleNetworkScanner(false) })
+        }
+
         if (uiState.showSettings) {
-            SecuritySettingsPanel(
-                apiKey = uiState.geminiApiKey,
-                onApiKeyChange = { viewModel.updateApiKey(it) },
+            SettingsScreen(
+                uiState = uiState,
+                viewModel = viewModel,
                 onClose = { viewModel.toggleSettings(false) }
             )
         }
 
-        if (showAIChat) {
-            SentinelChatOverlay(
-                chatHistory = uiState.chatHistory,
-                isAiLoading = uiState.isAiLoading,
-                onSendMessage = { viewModel.sendMessageToSentinel(it) },
-                onClose = { showAIChat = false }
-            )
+        if (uiState.isFileGuardianOpen) {
+            FileGuardianOverlay(onClose = { viewModel.toggleFileGuardian(false) })
         }
 
         uiState.auditReport?.let { report ->
@@ -517,13 +509,13 @@ fun DashboardScreen(
                     val consultQuery = "I scanned this URL: ${report.url}. Gemini audit says it's ${report.safetyStatus} because: ${report.analysis}. Is it a threat for a Syrian inventor's environment? Explain specifically for a bug bounty perspective."
                     viewModel.sendMessageToSentinel(consultQuery)
                     viewModel.closeAuditReport()
-                    showAIChat = true
+                    viewModel.toggleAiOverlay(true)
                 }
             )
         }
 
         Text(
-            text = "ABOUDA.AL.SHEKH.YOSSEF",
+            text = "A.SYRIA - FUTURE SECURED",
             style = MaterialTheme.typography.labelSmall.copy(
                 brush = Brush.linearGradient(
                     colors = listOf(TextGray.copy(alpha = 0.2f), CyberCyan.copy(alpha = 0.5f), TextGray.copy(alpha = 0.2f)),
@@ -532,11 +524,23 @@ fun DashboardScreen(
                 )
             ),
             fontSize = 10.sp,
-            letterSpacing = 4.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 6.sp,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 16.dp)
+                .padding(bottom = 8.dp)
+        )
+        
+        Text(
+            text = "ABOUDA.AL.SHEKH.YOSSEF",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextGray.copy(alpha = 0.3f),
+            fontSize = 8.sp,
+            letterSpacing = 2.sp,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 28.dp)
         )
     }
 }
@@ -729,6 +733,16 @@ fun ModuleCard(
     onClick: () -> Unit = {}
 ) {
     var touchPos by remember { mutableStateOf<Offset?>(null) }
+    val infiniteTransition = rememberInfiniteTransition(label = "IonicGlow")
+    
+    val pulseIntensity by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2000, easing = EaseInOutSine), RepeatMode.Reverse),
+        label = "Pulse"
+    )
+
+    val touchPulseIntensity = if (touchPos != null) 1.2f else 1f
     
     Box(
         modifier = Modifier
@@ -744,7 +758,6 @@ fun ModuleCard(
                 }
             }
             .graphicsLayer {
-                // Parallax Lean
                 rotationY = tiltX * 1.5f
                 rotationX = -tiltY * 1.5f
                 cameraDistance = 12f * density
@@ -757,9 +770,13 @@ fun ModuleCard(
                 .fillMaxSize()
                 .offset(shadowOffset.x.dp, shadowOffset.y.dp)
                 .border(
-                    width = 1.dp,
-                    brush = Brush.linearGradient(
-                        colors = listOf(CyberCyan.copy(alpha = 0.3f), Color.Transparent)
+                    width = 2.dp,
+                    brush = Brush.sweepGradient(
+                        colors = listOf(
+                            CyberCyan.copy(alpha = 0.3f * pulseIntensity * touchPulseIntensity),
+                            NeonBlue.copy(alpha = 0.1f),
+                            CyberCyan.copy(alpha = 0.3f * pulseIntensity * touchPulseIntensity)
+                        )
                     ),
                     shape = RoundedCornerShape(24.dp)
                 ),
@@ -772,7 +789,6 @@ fun ModuleCard(
             modifier = Modifier
                 .fillMaxSize()
                 .drawBehind {
-                    // Dynamic Glass Refraction (Moving Shine)
                     val shineProgress = ((tiltX + tiltY) / 10f) + 0.5f
                     drawRect(
                         brush = Brush.linearGradient(
@@ -782,8 +798,7 @@ fun ModuleCard(
                         ),
                         blendMode = BlendMode.Overlay
                     )
-                }
-                .blur(2.dp),
+                },
             color = GlassWhite,
             shape = RoundedCornerShape(24.dp),
             contentColor = OffWhite
@@ -792,7 +807,6 @@ fun ModuleCard(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Mythical Icon Container with Magnetic Pull
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -1253,150 +1267,7 @@ fun SecuritySettingsPanel(
 
 
 @Composable
-fun SpiritualHubOverlay(
-    state: PrayerUiState,
-    onClose: () -> Unit
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "HubAlpha")
-    val hubAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.05f,
-        targetValue = 0.15f,
-        animationSpec = infiniteRepeatable(tween(3000, easing = EaseInOutSine), RepeatMode.Reverse),
-        label = "Pulse"
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(VoidBlack.copy(alpha = 0.8f))
-            .clickable(onClick = onClose),
-        contentAlignment = Alignment.BottomCenter
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.75f)
-                .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
-                .background(VoidBlack)
-                .border(1.dp, GlassBorder, RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
-                .clickable(enabled = false) {}
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Header Handle
-            Box(
-                modifier = Modifier
-                    .width(40.dp)
-                    .height(4.dp)
-                    .background(TextGray.copy(alpha = 0.3f), CircleShape)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "NEURAL SPIRITUAL SYNC",
-                style = MaterialTheme.typography.labelLarge,
-                color = AmberZen,
-                letterSpacing = 3.sp
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Prayer Countdown Circle
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(200.dp)) {
-                // Outer Glow
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(AmberZen.copy(alpha = hubAlpha), Color.Transparent),
-                            center = center,
-                            radius = size.width / 2
-                        )
-                    )
-                }
-
-                CircularProgressIndicator(
-                    progress = 0.7f, // Demo progress
-                    modifier = Modifier.size(180.dp),
-                    color = AmberZen,
-                    strokeWidth = 2.dp,
-                    trackColor = GlassWhite
-                )
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "NEXT: ${state.nextPrayerName.uppercase()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextGray
-                    )
-                    Text(
-                        text = state.countdown,
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Light,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Azkar List
-            Text(
-                text = "DAILY FRAGMENTS",
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.align(Alignment.Start),
-                letterSpacing = 1.sp
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val azkar = listOf(
-                "أستغفر الله العظيم وأتوب إليه" to "Seek forgiveness and return to the light.",
-                "سبحان الله وبحمده" to "Praise be to the Creator of all realms.",
-                "لا إله إلا الله" to "The ultimate unity of all code and soul.",
-                "اللهم صل على محمد" to "Blessings upon the guiding beacon."
-            )
-
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(azkar.size) { index ->
-                    AzkarCard(azkar[index].first, azkar[index].second)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AzkarCard(arabic: String, english: String) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = GlassWhite,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, GlassBorder)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = arabic,
-                style = MaterialTheme.typography.titleMedium,
-                color = AmberZen,
-                textAlign = TextAlign.End,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = english,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextGray,
-                lineHeight = 16.sp
-            )
-        }
-    }
-}
+// Unused Spiritual Hub logic removed to use PrayerTimesModule.kt
 
 @Composable
 fun MythicalIconView(type: MythicalIcon) {
@@ -1630,13 +1501,13 @@ fun StatusShield(
     // Pulse Animation
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = if (status == SystemStatus.VULNERABLE) 1.2f else 1.1f,
+        targetValue = if (status == SystemStatus.VULNERABLE) 1.25f else 1.15f,
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = when {
-                    accentColor != null -> 4000
-                    status == SystemStatus.VULNERABLE -> 400
-                    else -> 2000
+                    accentColor != null -> 3000
+                    status == SystemStatus.VULNERABLE -> 350
+                    else -> 1200
                 }, 
                 easing = EaseInOutSine
             ),

@@ -12,8 +12,21 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 enum class ThemeMode {
-    STANDARD, ZEN
+    STANDARD, ZEN, WARM_STEALTH
 }
+
+private val WarmStealthColorScheme = darkColorScheme(
+    primary = AmberZen,
+    secondary = NeuralPurple,
+    tertiary = CyberCyan,
+    background = ZenBlack,
+    surface = VoidBlack,
+    onPrimary = ZenBlack,
+    onSecondary = OffWhite,
+    onTertiary = OffWhite,
+    onBackground = WarmWhite,
+    onSurface = WarmWhite
+)
 
 private val DarkColorScheme = darkColorScheme(
     primary = CyberCyan,
@@ -49,6 +62,7 @@ fun SentinelTheme(
     val colorScheme = when (mode) {
         ThemeMode.STANDARD -> DarkColorScheme
         ThemeMode.ZEN -> ZenColorScheme
+        ThemeMode.WARM_STEALTH -> WarmStealthColorScheme
     }
     
     val view = LocalView.current

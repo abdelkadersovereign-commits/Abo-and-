@@ -1,5 +1,7 @@
 package com.asyria.security.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -57,6 +61,24 @@ fun PrayerTimesModule(onClose: () -> Unit) {
     var nextPrayerName by remember { mutableStateOf("") }
 
     val prayers = remember { calculateDamascusPrayers(currentTime) }
+    
+    val verses = remember {
+        listOf(
+            "ألا بذكر الله تطمئن القلوب",
+            "إن الله مع الصابرين",
+            "وقل ربي زدني علماً",
+            "ادعوني أستجب لكم"
+        )
+    }
+    
+    var verseIndex by remember { mutableIntStateOf(0) }
+    
+    LaunchedEffect(Unit) {
+        while(true) {
+            delay(10000)
+            verseIndex = (verseIndex + 1) % verses.size
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -126,15 +148,41 @@ fun PrayerTimesModule(onClose: () -> Unit) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // Verse Section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                AnimatedContent(
+                    targetState = verses[verseIndex],
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(2000)) togetherWith fadeOut(animationSpec = tween(2000))
+                    },
+                    label = "VerseAnim"
+                ) { verse ->
+                    Text(
+                        text = verse,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.drawBehind {
+                            drawCircle(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(AmberZen.copy(alpha = 0.3f), Color.Transparent),
+                                    center = center,
+                                    radius = size.maxDimension / 2
+                                ),
+                                blendMode = BlendMode.Screen
+                            )
+                        }
+                    )
+                }
+            }
 
-            Text(
-                text = "Damascus, Syria (GMT+3)",
-                style = MaterialTheme.typography.labelLarge,
-                color = TextGray
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Main Countdown
             Surface(

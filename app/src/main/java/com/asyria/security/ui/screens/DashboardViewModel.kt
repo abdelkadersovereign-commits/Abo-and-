@@ -28,6 +28,10 @@ data class AuditReport(
     val showReport: Boolean = false
 )
 
+enum class ThemeLevel {
+    CYBER_NOIR, WARM_STEALTH
+}
+
 data class DashboardUiState(
     val status: SystemStatus = SystemStatus.SECURE,
     val integrityScore: Int = 98,
@@ -36,10 +40,27 @@ data class DashboardUiState(
         ChatMessage("S.E.N.T.I.N.E.L online. How can I assist with your security protocols today?", false)
     ),
     val isAiLoading: Boolean = false,
+    val isAiOverlayOpen: Boolean = false,
+    val isSpiritualHubOpen: Boolean = false,
+    val activeScanType: ScanType = ScanType.SYSTEM,
+    val isFileGuardianOpen: Boolean = false,
+    val isNetworkScannerOpen: Boolean = false,
     val geminiApiKey: String = "",
     val isScannerOpen: Boolean = false,
     val auditReport: AuditReport? = null,
-    val showSettings: Boolean = false
+    val showSettings: Boolean = false,
+    // Phase 2 Features
+    val userName: String = "Abdelkader",
+    val userRole: String = "Lead Inventor",
+    val userBio: String = "Guardian of the Digital Fortress",
+    val profileImageUri: String? = null,
+    val isBiometricEnabled: Boolean = false,
+    val isPinEnabled: Boolean = false,
+    val isStealthMode: Boolean = false,
+    val isSelfDestructEnabled: Boolean = false,
+    val language: String = "EN", // "EN" or "AR"
+    val themeLevel: ThemeLevel = ThemeLevel.CYBER_NOIR,
+    val notificationTone: String = "Calm Horizon"
 )
 
 class DashboardViewModel : ViewModel() {
@@ -63,8 +84,64 @@ class DashboardViewModel : ViewModel() {
         )
     }
 
-    fun setScannerOpen(open: Boolean) {
-        _uiState.value = _uiState.value.copy(isScannerOpen = open)
+    fun updateProfile(name: String, role: String, bio: String) {
+        _uiState.value = _uiState.value.copy(userName = name, userRole = role, userBio = bio)
+    }
+
+    fun updateProfileImage(uri: String?) {
+        _uiState.value = _uiState.value.copy(profileImageUri = uri)
+    }
+
+    fun toggleBiometric(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(isBiometricEnabled = enabled)
+    }
+
+    fun togglePin(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(isPinEnabled = enabled)
+    }
+
+    fun toggleStealthMode(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(isStealthMode = enabled)
+    }
+
+    fun toggleSelfDestruct(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(isSelfDestructEnabled = enabled)
+    }
+
+    fun setScannerOpen(open: Boolean, type: ScanType = ScanType.SYSTEM) {
+        _uiState.value = _uiState.value.copy(
+            isScannerOpen = open,
+            activeScanType = type
+        )
+    }
+
+    fun toggleAiOverlay(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isAiOverlayOpen = open)
+    }
+
+    fun toggleSpiritualHub(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isSpiritualHubOpen = open)
+    }
+
+    fun toggleFileGuardian(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isFileGuardianOpen = open)
+    }
+
+    fun toggleNetworkScanner(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isNetworkScannerOpen = open)
+    }
+
+    fun toggleLanguage() {
+        val newLang = if (_uiState.value.language == "EN") "AR" else "EN"
+        _uiState.value = _uiState.value.copy(language = newLang)
+    }
+
+    fun setThemeLevel(level: ThemeLevel) {
+        _uiState.value = _uiState.value.copy(themeLevel = level)
+    }
+
+    fun setNotificationTone(tone: String) {
+        _uiState.value = _uiState.value.copy(notificationTone = tone)
     }
 
     fun closeAuditReport() {

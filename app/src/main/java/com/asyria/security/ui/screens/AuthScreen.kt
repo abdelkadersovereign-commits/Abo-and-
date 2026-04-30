@@ -90,9 +90,14 @@ fun AuthScreen(
                     AnimatedBackground()
                 }
 
-                // Centered Login Form
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    LoginFormScreen(uiState, viewModel, haptic)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Sophisticated Welcome Header
+                    SophisticatedWelcome(uiState.themeMode)
+                    
+                    // Centered Login Form
+                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                        LoginFormScreen(uiState, { onAuthSuccess() }, viewModel, haptic)
+                    }
                 }
 
                 // Zen Toggle
@@ -117,18 +122,102 @@ fun AuthScreen(
                 }
                 
                 // Footer
-                Text(
-                    text = "A.SYRIA SECURITY SUITE",
-                    color = TextGray.copy(alpha = 0.5f),
-                    fontSize = 10.sp,
-                    letterSpacing = 4.sp,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 16.dp)
-                )
+                BrandingFooter()
             }
         }
+    }
+}
+
+@Composable
+fun SophisticatedWelcome(mode: ThemeMode) {
+    val infiniteTransition = rememberInfiniteTransition(label = "WelcomeGlow")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(3000, easing = EaseInOutSine), RepeatMode.Reverse),
+        label = "Alpha"
+    )
+
+    val shimmerTranslate by infiniteTransition.animateFloat(
+        initialValue = -1000f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing)),
+        label = "Shimmer"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(top = 48.dp, horizontal = 24.dp)
+            .drawBehind {
+                // Moving Glowing Background (Shimmer)
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            if (mode == ThemeMode.ZEN) AmberZen.copy(alpha = 0.05f) else CyberCyan.copy(alpha = 0.05f),
+                            Color.Transparent
+                        ),
+                        start = Offset(shimmerTranslate, 0f),
+                        end = Offset(shimmerTranslate + 500f, 500f)
+                    ),
+                    blendMode = BlendMode.Screen
+                )
+            },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "لَا تَقْنَطُوا مِن رَّحْمَةِ اللَّهِ",
+            style = MaterialTheme.typography.headlineMedium,
+            color = if (mode == ThemeMode.ZEN) AmberZen else CyberCyan.copy(alpha = alpha),
+            fontWeight = FontWeight.Black,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "DO NOT DESPAIR OF THE MERCY OF ALLAH",
+            style = MaterialTheme.typography.labelSmall,
+            color = TextGray,
+            letterSpacing = 2.sp,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Text(
+            text = "Welcome to the Neural Sanctuary of A.SYRIA. A fortress for the visionary mind, where sovereign technology meets spiritual resonance.",
+            style = MaterialTheme.typography.bodySmall,
+            color = OffWhite.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp,
+            modifier = Modifier.fillMaxWidth(0.8f)
+        )
+    }
+}
+
+@Composable
+fun BrandingFooter() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter)
+            .navigationBarsPadding()
+            .padding(bottom = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "A.SYRIA - FUTURE SECURED",
+            color = CyberCyan.copy(alpha = 0.5f),
+            fontWeight = FontWeight.Bold,
+            fontSize = 10.sp,
+            letterSpacing = 6.sp
+        )
+        Text(
+            text = "BEYOND TECHNOLOGY • WITHIN SOVEREIGNTY",
+            color = TextGray.copy(alpha = 0.3f),
+            fontSize = 8.sp,
+            letterSpacing = 2.sp
+        )
     }
 }
 
@@ -167,112 +256,123 @@ private fun AnimatedBackground() {
 @Composable
 fun LoginFormScreen(
     uiState: AuthUiState,
+    onAuthSuccess: () -> Unit,
     viewModel: AuthViewModel,
     haptic: HapticFeedback
 ) {
     val emailFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    var isVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uiState.isLogin) {
+    LaunchedEffect(Unit) {
+        isVisible = true
         kotlinx.coroutines.delay(300)
         emailFocusRequester.requestFocus()
         keyboardController?.show()
     }
 
-    Column(
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(1000)) + expandVertically(animationSpec = tween(1000)),
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp)
-            .imePadding(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .imePadding()
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(2.dp, CyberCyan.copy(alpha = 0.3f), RoundedCornerShape(24.dp)),
-            shape = RoundedCornerShape(24.dp),
-            color = VoidBlack.copy(alpha = 0.8f)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(2.dp, CyberCyan.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                    .blur(if (uiState.isLoading) 4.dp else 0.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = VoidBlack.copy(alpha = 0.85f)
             ) {
-                Text(
-                    text = if (uiState.isLogin) "LOGIN TO HUB" else "CREATE NEURAL ID",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = CyberCyan,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                CyberTextField(
-                    value = uiState.email,
-                    onValueChange = { viewModel.onEmailChange(it) },
-                    label = "Operator Email",
-                    icon = Icons.Default.Email,
-                    isError = uiState.emailError != null,
-                    errorMessage = uiState.emailError,
-                    modifier = Modifier.focusRequester(emailFocusRequester)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                var passwordVisible by remember { mutableStateOf(false) }
-                CyberTextField(
-                    value = uiState.password,
-                    onValueChange = { viewModel.onPasswordChange(it) },
-                    label = "Encryption Key",
-                    icon = Icons.Default.Lock,
-                    isPassword = true,
-                    passwordVisible = passwordVisible,
-                    onTogglePassword = { passwordVisible = !passwordVisible },
-                    isError = uiState.passwordError != null,
-                    errorMessage = uiState.passwordError
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = { 
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.authenticate() 
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
-                    enabled = !uiState.isLoading
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(color = VoidBlack, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text(
-                            text = if (uiState.isLogin) "INITIALIZE" else "REGISTER",
-                            color = VoidBlack,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 2.sp
-                        )
+                    Text(
+                        text = if (uiState.isLogin) "LOGIN TO HUB" else "CREATE NEURAL ID",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = CyberCyan,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 2.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    CyberTextField(
+                        value = uiState.email,
+                        onValueChange = { viewModel.onEmailChange(it) },
+                        label = "Operator Email",
+                        icon = Icons.Default.Email,
+                        isError = uiState.emailError != null,
+                        errorMessage = uiState.emailError,
+                        modifier = Modifier.focusRequester(emailFocusRequester)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    var passwordVisible by remember { mutableStateOf(false) }
+                    CyberTextField(
+                        value = uiState.password,
+                        onValueChange = { viewModel.onPasswordChange(it) },
+                        label = "Encryption Key",
+                        icon = Icons.Default.Lock,
+                        isPassword = true,
+                        passwordVisible = passwordVisible,
+                        onTogglePassword = { passwordVisible = !passwordVisible },
+                        isError = uiState.passwordError != null,
+                        errorMessage = uiState.passwordError
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = { 
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            // Bypass directly to dashboard as requested
+                            onAuthSuccess()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                        enabled = !uiState.isLoading
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(color = VoidBlack, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(
+                                text = if (uiState.isLogin) "INITIALIZE" else "REGISTER",
+                                color = VoidBlack,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 2.sp
+                            )
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = if (uiState.isLogin) "Need new credentials? Create ID" else "Return to Login",
+                        color = TextGray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { 
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.toggleAuthMode() 
+                        }
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = if (uiState.isLogin) "Need new credentials? Create ID" else "Return to Login",
-                    color = TextGray,
-                    fontSize = 12.sp,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { 
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        viewModel.toggleAuthMode() 
-                    }
-                )
             }
         }
     }
