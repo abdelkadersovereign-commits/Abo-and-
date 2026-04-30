@@ -90,6 +90,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 _uiState.value = _uiState.value.copy(themeLevel = level)
             }
         }
+        
+        viewModelScope.launch {
+            sessionManager?.language?.collect { lang ->
+                _uiState.value = _uiState.value.copy(language = lang)
+            }
+        }
+        
+        viewModelScope.launch {
+            sessionManager?.isBiometricEnabled?.collect { enabled ->
+                _uiState.value = _uiState.value.copy(isBiometricEnabled = enabled)
+            }
+        }
     }
 
     fun updateApiKey(key: String) {
@@ -109,7 +121,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun toggleBiometric(enabled: Boolean) {
-        _uiState.value = _uiState.value.copy(isBiometricEnabled = enabled)
+        viewModelScope.launch {
+            sessionManager?.setBiometricEnabled(enabled)
+        }
     }
 
     fun togglePin(enabled: Boolean) {
@@ -160,17 +174,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun toggleLanguage() {
-        val newLang = if (_uiState.value.language == "EN") "AR" else "EN"
-        _uiState.value = _uiState.value.copy(language = newLang)
+        viewModelScope.launch {
+            val newLang = if (_uiState.value.language == "EN") "AR" else "EN"
+            sessionManager?.setLanguage(newLang)
+        }
     }
 
     fun changePin(oldPin: String, newPin: String): Boolean {
         val currentPin = sessionManager?.getSecurityPin()
-        if (currentPin == oldPin) {
-            sessionManager?.setSecurityPin(newPin)
-            return true
+        return if (currentPin == oldPin) {
+            viewModelScope.launch { sessionManager?.setSecurityPin(newPin) }
+            true
+        } else {
+            false
         }
-        return false
     }
 
     fun setThemeLevel(level: ThemeLevel) {

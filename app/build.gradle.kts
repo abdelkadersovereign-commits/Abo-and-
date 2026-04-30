@@ -98,7 +98,6 @@ dependencies {
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
 
     // Google Sign-In
-    implementation("com.google.android.gms:play-services-auth:21.1.1")
     implementation("com.google.android.gms:play-services-location:21.2.0")
 
 

@@ -20,6 +20,7 @@ class SessionManager(private val context: Context) {
     companion object {
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val LANGUAGE = stringPreferencesKey("language")
         private const val PIN_KEY = "security_pin"
     }
     
@@ -56,6 +57,16 @@ class SessionManager(private val context: Context) {
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { preferences ->
             preferences[THEME_MODE] = mode.name
+        }
+    }
+
+    val language: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[LANGUAGE] ?: "EN"
+    }
+
+    suspend fun setLanguage(lang: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LANGUAGE] = lang
         }
     }
 

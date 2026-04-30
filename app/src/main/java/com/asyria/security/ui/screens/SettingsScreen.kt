@@ -165,6 +165,16 @@ fun SettingsScreen(
 
             // Security Hardening
             SettingsCategory(title = if (uiState.language == "EN") "SECURITY PROTOCOLS" else "بروتوكولات الأمان")
+            SecurityToggle(
+                title = if (uiState.language == "EN") "Biometric Unlock" else "الفتح بالبصمة",
+                subtitle = if (uiState.language == "EN") "Use fingerprint to access" else "استخدم بصمة الإصبع للوصول",
+                isActive = uiState.isBiometricEnabled,
+                onToggle = {
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    viewModel.toggleBiometric(!uiState.isBiometricEnabled)
+                }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             SecurityActionItem(
                 title = if (uiState.language == "EN") "Change Security PIN" else "تغيير رمز PIN",
                 icon = Icons.Default.LockReset
@@ -190,7 +200,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Designed by ABOUDA.AL.SHEKH.YOSSEF",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.labelSmall,
                     color = CyberCyan.copy(alpha = 0.4f),
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,

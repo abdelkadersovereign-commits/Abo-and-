@@ -1,56 +1,87 @@
 package com.asyria.security
 
 import android.os.Bundle
-import androidx.fragment.app.FragmentActivity
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.activity.viewModels
+import androidx.compose.animation.Crossfade
+import androidx.compose.runtime.*
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.asyria.security.data.SessionManager
-import com.asyria.security.ui.navigation.NavGraph
-import com.asyria.security.ui.theme.SentinelTheme
-import com.asyria.security.ui.theme.ThemeMode
-
-import android.content.IntentFilter
-import android.hardware.usb.UsbManager
-import com.asyria.security.services.UsbBroadcastReceiver
+import com.asyria.security.ui.screens.DashboardScreen
+import com.asyria.security.ui.screens.LoginScreen
+import com.asyria.security.ui.screens.SplashScreen
+import com.asyria.security.ui.theme.ASyriaTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 
 class MainActivity : FragmentActivity() {
-    private val usbReceiver = UsbBroadcastReceiver()
+    private val viewModel: com.asyria.security.ui.screens.DashboardViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        val filter = IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED)
-        registerReceiver(usbReceiver, filter)
+        installSplashScreen()
 
-        enableEdgeToEdge()
-        val sessionManager = SessionManager(this)
-        
         setContent {
-            val themeMode by sessionManager.themeMode.collectAsState(initial = ThemeMode.STANDARD)
-            
-            SentinelTheme(mode = themeMode) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    NavGraph()
+            val uiState by viewModel.uiState.collectAsState()
+            var showSplash by remember { mutableStateOf(true) }
+            var isLoggedIn by remember { mutableStateOf(false) }
+            var isAuthenticated by remember { mutableStateOf(false) }
+
+            LaunchedEffect(Unit) {
+                isLoggedIn = SessionManager(this@MainActivity).isLoggedIn.first()
+                if (isLoggedIn && SessionManager(this@MainActivity).isBiometricEnabled.first()) {
+                    authenticateWithBiometrics {
+                        isAuthenticated = true
+                    }
+                } else {
+                    isAuthenticated = true
+                }
+            }
+
+            ASyriaTheme(themeMode = uiState.themeLevel.let { 
+                if (it == com.asyria.security.ui.screens.ThemeLevel.WARM_STEALTH) com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH 
+                else com.asyria.security.ui.theme.ThemeMode.STANDARD 
+            }) {
+                Crossfade(targetState = showSplash) {
+                    if (it) {
+                        SplashScreen(onTimeout = { showSplash = false })
+                    } else {
+                        if (isAuthenticated) {
+                            if (isLoggedIn) {
+                                DashboardScreen(viewModel = viewModel)
+                            } else {
+                                LoginScreen()
+                            }
+                        } else {
+                            // You can show a message or a different screen if biometric auth fails
+                        }
+                    }
                 }
             }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        try {
-            unregisterReceiver(usbReceiver)
-        } catch (e: Exception) {
-            // Context might have already unregistered
-        }
+    private fun authenticateWithBiometrics(onSuccess: () -> Unit) {
+        val executor = ContextCompat.getMainExecutor(this)
+        val biometricPrompt = BiometricPrompt(this, executor, 
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    super.onAuthenticationSucceeded(result)
+                    onSuccess()
+                }
+            })
+
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("Biometric Authentication")
+            .setSubtitle("Log in using your biometric credential")
+            .setNegativeButtonText("Use account password")
+            .build()
+
+        biometricPrompt.authenticate(promptInfo)
     }
 }

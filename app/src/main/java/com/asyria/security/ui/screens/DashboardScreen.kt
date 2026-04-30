@@ -69,6 +69,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.asyria.security.ui.theme.*
 import kotlin.math.*
 import kotlinx.coroutines.delay
+import java.time.LocalDate
+import java.time.chrono.HijrahDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.res.stringResource
@@ -360,6 +364,7 @@ fun DashboardContent(
             topBar = {
                 Box(modifier = Modifier.statusBarsPadding().padding(horizontal = 24.dp, vertical = 16.dp)) {
                     HeaderSection(
+                        uiState = uiState,
                         score = uiState.integrityScore,
                         onSettingsClick = { viewModel.toggleSettings(true) },
                         isAiLoading = uiState.isAiLoading
@@ -369,7 +374,7 @@ fun DashboardContent(
             floatingActionButton = {
                 Box(modifier = Modifier.padding(bottom = 90.dp)) {
                     CyberFloatingActionButton(
-                        onClick = { showAIChat = true },
+                        onClick = { viewModel.toggleAiOverlay(true) },
                         isActive = uiState.isAiLoading
                     )
                 }
@@ -489,13 +494,6 @@ fun DashboardContent(
         }
 
         // Overlays Layer
-        if (uiState.isScannerOpen) {
-            ScannerScreen(
-                type = uiState.activeScanType,
-                onClose = { viewModel.setScannerOpen(false) }
-            )
-        }
-
         if (uiState.isAiOverlayOpen) {
             SentinelAIOverlay(
                 uiState = uiState,
@@ -510,10 +508,6 @@ fun DashboardContent(
 
         if (uiState.isNetworkScannerOpen) {
             NetworkScannerOverlay(onClose = { viewModel.toggleNetworkScanner(false) })
-        }
-
-        if (uiState.isThreatScannerOpen) {
-            NetworkScannerScreen(onClose = { viewModel.toggleThreatScanner(false) })
         }
 
         if (uiState.isLinkScannerOpen) {
@@ -566,16 +560,22 @@ fun DashboardContent(
                 .navigationBarsPadding()
                 .padding(bottom = 8.dp)
         )
-        
+
         Text(
             text = "Designed by ABOUDA.AL.SHEKH.YOSSEF",
-            style = MaterialTheme.typography.labelSmall,
-            color = CyberCyan.copy(alpha = 0.3f),
+            style = MaterialTheme.typography.labelSmall.copy(
+                brush = Brush.linearGradient(
+                    colors = listOf(TextGray.copy(alpha = 0.2f), CyberCyan.copy(alpha = 0.5f), TextGray.copy(alpha = 0.2f)),
+                    start = Offset(shimmerTranslate - 200f, 0f),
+                    end = Offset(shimmerTranslate, 0f)
+                )
+            ),
             fontSize = 8.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
                 .padding(bottom = 28.dp)
         )
     }
@@ -1290,82 +1290,116 @@ fun MythicalIconView(type: MythicalIcon) {
     }
 }
 
-// Removed unused AIChatOverlay
+@Composable
+fun HeaderSection(
+    uiState: DashboardUiState,
+    score: Int, 
+    onSettingsClick: () -> Unit, 
+    isAiLoading: Boolean = false
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "HeaderAnim")
+    val today = LocalDate.now()
+    val hijriDate = HijrahDate.from(today)
+    val gregorianFormatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.ENGLISH)
+    val hijriFormatter = DateTimeFormatter.ofPattern("dd MMMM yyyy G", Locale.forLanguageTag("ar"))
+    
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (uiState.language == "EN") "OPERATOR: ACTIVE" else "المشغل: نشط",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextGray
+                    )
+                    if (isAiLoading) {
+                        val pulseAlpha by infiniteTransition.animateFloat(
+                            initialValue = 0.4f,
+                            targetValue = 1f,
+                            animationSpec = infiniteRepeatable(tween(800, easing = EaseInOutSine), RepeatMode.Reverse),
+                            label = "NeuralPulse"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = CyberCyan.copy(alpha = pulseAlpha),
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = if (uiState.language == "EN") "Sentinel Core" else "نواة SENTINEL",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = OffWhite,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    color = GlassWhite,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Shield,
+                            contentDescription = null,
+                            tint = CyberCyan,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "$score%",
+                            color = CyberCyan,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.background(GlassWhite, CircleShape).border(1.dp, GlassBorder, CircleShape)
+                ) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(GlassWhite, RoundedCornerShape(8.dp))
+                .border(1.dp, GlassBorder, RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DateItem(icon = Icons.Default.DateRange, text = today.format(gregorianFormatter))
+            DateItem(icon = Icons.Default.Star, text = hijriDate.format(hijriFormatter))
+        }
+    }
+}
 
 @Composable
-fun HeaderSection(score: Int, onSettingsClick: () -> Unit, isAiLoading: Boolean = false) {
-    val infiniteTransition = rememberInfiniteTransition(label = "HeaderAnim")
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "OPERATOR: ACTIVE",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextGray
-                )
-                if (isAiLoading) {
-                    val pulseAlpha by infiniteTransition.animateFloat(
-                        initialValue = 0.4f,
-                        targetValue = 1f,
-                        animationSpec = infiniteRepeatable(tween(800, easing = EaseInOutSine), RepeatMode.Reverse),
-                        label = "NeuralPulse"
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        Icons.Default.AutoAwesome,
-                        contentDescription = null,
-                        tint = CyberCyan.copy(alpha = pulseAlpha),
-                        modifier = Modifier.size(12.dp)
-                    )
-                }
-            }
-            Text(
-                text = "Sentinel Core",
-                style = MaterialTheme.typography.titleLarge,
-                color = OffWhite,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                color = GlassWhite,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.border(1.dp, GlassBorder, RoundedCornerShape(12.dp))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = CyberCyan,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "$score%",
-                        color = CyberCyan,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.background(GlassWhite, CircleShape).border(1.dp, GlassBorder, CircleShape)
-            ) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
-            }
-        }
+fun DateItem(icon: ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(imageVector = icon, contentDescription = null, tint = TextGray, modifier = Modifier.size(14.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text = text, color = TextGray, fontSize = 10.sp, letterSpacing = 1.sp)
     }
 }
 
@@ -1504,4 +1538,3 @@ fun StatusShield(
         )
     }
 }
-

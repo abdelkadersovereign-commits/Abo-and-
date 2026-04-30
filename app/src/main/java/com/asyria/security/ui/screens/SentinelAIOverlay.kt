@@ -16,8 +16,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.draw.alpha
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.asyria.security.ui.theme.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import kotlinx.coroutines.delay
 
 @Composable
 fun SentinelAIOverlay(
@@ -36,11 +40,19 @@ fun SentinelAIOverlay(
     val listState = rememberLazyListState()
     val haptic = LocalHapticFeedback.current
     val infiniteTransition = rememberInfiniteTransition(label = "SentinelAnim")
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(uiState.chatHistory.size) {
         if (uiState.chatHistory.isNotEmpty()) {
             listState.animateScrollToItem(uiState.chatHistory.size - 1)
         }
+    }
+
+    LaunchedEffect(Unit) {
+        delay(300) // Allow animation to start
+        focusRequester.requestFocus()
+        keyboardController?.show()
     }
 
     Box(
@@ -128,7 +140,7 @@ fun SentinelAIOverlay(
                 TextField(
                     value = messageText,
                     onValueChange = { messageText = it },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).focusRequester(focusRequester),
                     placeholder = { Text("Query AI Intel...", color = TextGray) },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
