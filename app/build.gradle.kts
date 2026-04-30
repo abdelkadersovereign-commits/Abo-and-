@@ -73,6 +73,7 @@ android {
 dependencies {
     implementation("androidx.work:work-runtime:2.9.0") 
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
     
     
     // استخدام BOM الموحد لضمان توافق جميع نسخ Compose
