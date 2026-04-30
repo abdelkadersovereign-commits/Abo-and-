@@ -18,6 +18,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.text.font.FontFamily
 import com.asyria.security.ui.theme.*
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -154,7 +157,7 @@ fun PrayerTimesModule(onClose: () -> Unit) {
                     Text(
                         text = countdownText,
                         style = MaterialTheme.typography.displayMedium,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        fontFamily = FontFamily.Monospace,
                         color = OffWhite,
                         fontWeight = FontWeight.Light,
                         letterSpacing = 4.sp
@@ -174,7 +177,7 @@ fun PrayerTimesModule(onClose: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            androidx.compose.foundation.lazy.LazyColumn(
+            LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -207,7 +210,7 @@ fun PrayerTimesModule(onClose: () -> Unit) {
                             text = p.timeStr,
                             style = MaterialTheme.typography.bodyLarge,
                             color = if (isNext) AmberZen else TextGray,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                            fontFamily = FontFamily.Monospace
                         )
                     }
                 }

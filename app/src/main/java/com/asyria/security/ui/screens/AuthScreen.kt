@@ -28,6 +28,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -151,8 +155,8 @@ private fun AnimatedBackground() {
                         NeonBlue.copy(alpha = 0.15f),
                         VoidBlack
                     ),
-                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                    end = androidx.compose.ui.geometry.Offset(size.width * animValue, size.height)
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width * animValue, size.height)
                 )
                 drawRect(brush)
             }
@@ -166,8 +170,8 @@ fun LoginFormScreen(
     viewModel: AuthViewModel,
     haptic: HapticFeedback
 ) {
-    val emailFocusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
-    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val emailFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(uiState.isLogin) {
         kotlinx.coroutines.delay(300)
@@ -211,7 +215,7 @@ fun LoginFormScreen(
                     icon = Icons.Default.Email,
                     isError = uiState.emailError != null,
                     errorMessage = uiState.emailError,
-                    modifier = Modifier.androidx.compose.ui.focus.focusRequester(emailFocusRequester)
+                    modifier = Modifier.focusRequester(emailFocusRequester)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

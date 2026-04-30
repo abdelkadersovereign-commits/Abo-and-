@@ -7,6 +7,15 @@ import android.hardware.SensorManager
 import android.content.Context
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -815,7 +824,7 @@ fun ScannerOverlay(
     onClose: () -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val executor = remember { Executors.newSingleThreadExecutor() }
 
@@ -934,7 +943,7 @@ fun ScannerOverlay(
                             endY = laserYPos + 40.dp.toPx()
                         ),
                         topLeft = Offset(left, laserYPos - 40.dp.toPx()),
-                        size = androidx.compose.ui.geometry.Size(scanSize, 80.dp.toPx()),
+                        size = Size(scanSize, 80.dp.toPx()),
                         blendMode = BlendMode.Screen
                     )
                 }
@@ -1149,9 +1158,9 @@ fun SecuritySettingsPanel(
     onApiKeyChange: (String) -> Unit,
     onClose: () -> Unit
 ) {
-    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
-    val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val uriHandler = LocalUriHandler.current
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(300)
@@ -1193,8 +1202,8 @@ fun SecuritySettingsPanel(
                 OutlinedTextField(
                     value = apiKey,
                     onValueChange = onApiKeyChange,
-                    modifier = Modifier.fillMaxWidth().androidx.compose.ui.focus.focusRequester(focusRequester),
-                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    visualTransformation = PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = CyberCyan,
                         unfocusedBorderColor = GlassBorder,
@@ -1325,7 +1334,7 @@ fun SpiritualHubOverlay(
                         style = MaterialTheme.typography.headlineLarge,
                         color = Color.White,
                         fontWeight = FontWeight.Light,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        fontFamily = FontFamily.Monospace
                     )
                 }
             }
@@ -1350,7 +1359,7 @@ fun SpiritualHubOverlay(
                 "اللهم صل على محمد" to "Blessings upon the guiding beacon."
             )
 
-            androidx.compose.foundation.lazy.LazyColumn(
+            LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -1480,9 +1489,9 @@ fun MythicalIconView(type: MythicalIcon) {
             Canvas(modifier = Modifier.size(32.dp)) {
                 // Crescent
                 val path = Path().apply {
-                    addOval(androidx.compose.ui.geometry.Rect(0f, 0f, size.width, size.height))
+                    addOval(Rect(0f, 0f, size.width, size.height))
                     val innerOval = Path().apply {
-                        addOval(androidx.compose.ui.geometry.Rect(size.width * 0.2f, -size.height * 0.1f, size.width * 1.2f, size.height))
+                        addOval(Rect(size.width * 0.2f, -size.height * 0.1f, size.width * 1.2f, size.height))
                     }
                     op(this, innerOval, PathOperation.Difference)
                 }
