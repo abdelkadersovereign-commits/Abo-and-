@@ -54,7 +54,7 @@ android {
     }
     composeOptions {
         // تم تحديث هذه النسخة لتتوافق مع Kotlin 1.9.x ولتجنب أخطاء البناء
-        kotlinCompilerExtensionVersion = "1.5.10" 
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
     kapt {
         correctErrorTypes = true
@@ -87,6 +87,8 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
+
 
     // Coil لتحميل الصور
     implementation("io.coil-kt:coil-compose:2.6.0")
@@ -96,6 +98,8 @@ dependencies {
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.1.1")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
+
 
     // Navigation Compose للتنقل بين الشاشات
     implementation("androidx.navigation:navigation-compose:2.7.7")
