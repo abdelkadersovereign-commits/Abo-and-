@@ -173,13 +173,28 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             // Footer
-            Text(
-                text = "A.SYRIA OS v4.2.0-STABLE",
-                color = TextGray.copy(alpha = 0.3f),
-                fontSize = 10.sp,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "A.SYRIA OS v4.2.0-STABLE",
+                    color = TextGray.copy(alpha = 0.3f),
+                    fontSize = 10.sp,
+                    letterSpacing = 2.sp
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Designed by ABOUDA.AL.SHEKH.YOSSEF",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = CyberCyan.copy(alpha = 0.4f),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
         }
     }
 }

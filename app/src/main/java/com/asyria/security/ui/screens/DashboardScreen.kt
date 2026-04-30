@@ -67,6 +67,7 @@ import com.asyria.security.ui.theme.*
 import kotlin.math.*
 import kotlinx.coroutines.delay
 
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.camera.view.PreviewView
@@ -295,16 +296,12 @@ fun DashboardContent(
         label = "ShadowShift"
     )
 
-    // FAB Floating Animation
-    val fabTranslation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "FabFloat"
-    )
+    val scrollState = rememberScrollState()
+    
+    // Shield Animation Logic based on Scroll
+    val shieldScale = lerp(1f, 0.4f, (scrollState.value.toFloat() / 500f).coerceIn(0f, 1f))
+    val shieldTranslateY = lerp(0f, -280f, (scrollState.value.toFloat() / 500f).coerceIn(0f, 1f))
+    val shieldAlpha = lerp(1f, 0.9f, (scrollState.value.toFloat() / 500f).coerceIn(0f, 1f))
 
     Box(
         modifier = Modifier
@@ -328,6 +325,13 @@ fun DashboardContent(
             )
         }
 
+        val statusColor = when {
+            prayerState.isHubOpen -> AmberZen
+            uiState.status == SystemStatus.SECURE -> CyberCyan
+            uiState.status == SystemStatus.SCANNING -> NeonBlue
+            else -> RiskRed
+        }
+
         // 2. Atmospheric Edge Glow
         val edgePulse by infiniteTransition.animateFloat(
             initialValue = 0.1f,
@@ -335,12 +339,6 @@ fun DashboardContent(
             animationSpec = infiniteRepeatable(tween(2000, easing = EaseInOutSine), RepeatMode.Reverse),
             label = "EdgeGlow"
         )
-        val statusColor = when {
-            prayerState.isHubOpen -> AmberZen
-            uiState.status == SystemStatus.SECURE -> CyberCyan
-            uiState.status == SystemStatus.SCANNING -> NeonBlue
-            else -> RiskRed
-        }
 
         Box(
             modifier = Modifier
@@ -398,47 +396,10 @@ fun DashboardContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .verticalScroll(scrollState)
                     .padding(horizontal = 24.dp)
             ) {
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Central Shield
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1.2f)
-                        .graphicsLayer {
-                            scaleX = bootScale
-                            scaleY = bootScale
-                            alpha = bootAlpha
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        StatusShield(
-                            status = if (prayerState.isHubOpen) SystemStatus.SCANNING else uiState.status,
-                            tiltX = roll,
-                            tiltY = pitch,
-                            onClick = { viewModel.runSystemAudit() },
-                            accentColor = if (prayerState.isHubOpen) AmberZen else null
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = when {
-                                uiState.isSpiritualHubOpen -> if (uiState.language == "EN") "SPIRITUAL SYNC" else "مزامنة روحانية"
-                                uiState.status == SystemStatus.SECURE -> if (uiState.language == "EN") "SYSTEM SECURE" else "النظام آمن"
-                                uiState.status == SystemStatus.SCANNING -> if (uiState.language == "EN") "SCANNING PROTOCOLS..." else "فحص البروتوكولات..."
-                                else -> if (uiState.language == "EN") "THREAT DETECTED" else "تم كشف تهديد"
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = statusColor,
-                            fontWeight = FontWeight.Black,
-                            letterSpacing = 4.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(320.dp)) // Reserve space for Shield
 
                 // 6-Module Grid
                 LazyVerticalGrid(
@@ -446,21 +407,21 @@ fun DashboardContent(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier
-                        .weight(1f)
+                        .height(600.dp) // Fixed height to allow scrolling in Column
                         .graphicsLayer {
                             translationY = (1f - bootAlpha) * 100.dp.toPx()
                             alpha = bootAlpha
                         }
                 ) {
                     val modules = listOf(
-                        Triple("Network Scanner", "Topology Map", MythicalIcon.Network) to { viewModel.toggleNetworkScanner(true) },
-                        Triple("Link Sentinel", "URL Audit", MythicalIcon.Scanner) to { viewModel.toggleLinkScanner(true) },
-                        Triple("Media Scanner", "Vision Audit", MythicalIcon.Camera) to { viewModel.toggleMediaScanner(true) },
-                        Triple("Spiritual Hub", "Neural Balance", MythicalIcon.Spiritual) to { viewModel.toggleSpiritualHub(true) },
-                        Triple("Sentinel AI", "Core Intel", MythicalIcon.Sentinel) to { viewModel.toggleAiOverlay(true) },
-                        Triple("Threat Analysis", "System Integrity", MythicalIcon.Threats) to { viewModel.toggleThreatScanner(true) },
-                        Triple("File Guardian", "Vault Protocol", MythicalIcon.Files) to { viewModel.toggleFileGuardian(true) },
-                        Triple("System Settings", "Config & Keys", MythicalIcon.Settings) to { viewModel.toggleSettings(true) }
+                        Triple(if (uiState.language == "EN") "Network Scanner" else "ماصح الشبكة", if (uiState.language == "EN") "Topology Map" else "خريطة الشبكة", MythicalIcon.Network) to { viewModel.toggleNetworkScanner(true) },
+                        Triple(if (uiState.language == "EN") "Link Sentinel" else "رادار الروابط", if (uiState.language == "EN") "URL Audit" else "فحص الروابط", MythicalIcon.Scanner) to { viewModel.toggleLinkScanner(true) },
+                        Triple(if (uiState.language == "EN") "Media Scanner" else "ماصح الوسائط", if (uiState.language == "EN") "Vision Audit" else "فحص الرؤية", MythicalIcon.Camera) to { viewModel.toggleMediaScanner(true) },
+                        Triple(if (uiState.language == "EN") "Spiritual Hub" else "الركن الروحاني", if (uiState.language == "EN") "Neural Balance" else "التوازن العصبي", MythicalIcon.Spiritual) to { viewModel.toggleSpiritualHub(true) },
+                        Triple(if (uiState.language == "EN") "Sentinel AI" else "ذكاء SENTINEL", if (uiState.language == "EN") "Core Intel" else "معلومات المحرك", MythicalIcon.Sentinel) to { viewModel.toggleAiOverlay(true) },
+                        Triple(if (uiState.language == "EN") "Threat Analysis" else "تحليل التهديدات", if (uiState.language == "EN") "System Integrity" else "سلامة النظام", MythicalIcon.Threats) to { viewModel.toggleThreatScanner(true) },
+                        Triple(if (uiState.language == "EN") "File Guardian" else "حارس الملفات", if (uiState.language == "EN") "Vault Protocol" else "بروتوكول القبو", MythicalIcon.Files) to { viewModel.toggleFileGuardian(true) },
+                        Triple(if (uiState.language == "EN") "System Settings" else "إعدادات النظام", if (uiState.language == "EN") "Config & Keys" else "المفاتيح والتكوين", MythicalIcon.Settings) to { viewModel.toggleSettings(true) }
                     )
 
                     items(modules.size) { index ->
@@ -492,12 +453,55 @@ fun DashboardContent(
                     }
                 }
                 
+                Spacer(modifier = Modifier.height(24.dp))
+
                 // Sentinel Status Metrics Bar
                 AnimatedVisibility(visible = !uiState.isStealthMode) {
                     SentinelMetricsBar()
                 }
                 
-                Spacer(modifier = Modifier.height(60.dp))
+                Spacer(modifier = Modifier.height(100.dp))
+            }
+        }
+
+        // Animated Central Shield (Positioned above everything else)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 100.dp)
+                .graphicsLayer {
+                    scaleX = bootScale * shieldScale
+                    scaleY = bootScale * shieldScale
+                    translationY = shieldTranslateY.dp.toPx()
+                    alpha = bootAlpha * shieldAlpha
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                StatusShield(
+                    status = if (prayerState.isHubOpen) SystemStatus.SCANNING else uiState.status,
+                    tiltX = roll,
+                    tiltY = pitch,
+                    onClick = { viewModel.runSystemAudit() },
+                    accentColor = if (prayerState.isHubOpen) AmberZen else null
+                )
+                
+                // Hide text when shield is small
+                if (shieldScale > 0.7f) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = when {
+                            prayerState.isHubOpen -> if (uiState.language == "EN") "SPIRITUAL SYNC" else "مزامنة روحانية"
+                            uiState.status == SystemStatus.SECURE -> if (uiState.language == "EN") "SYSTEM SECURE" else "النظام آمن"
+                            uiState.status == SystemStatus.SCANNING -> if (uiState.language == "EN") "SCANNING..." else "جاري الفحص..."
+                            else -> if (uiState.language == "EN") "THREAT DETECTED" else "تم كشف تهديد"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        color = statusColor,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 4.sp
+                    )
+                }
             }
         }
 
@@ -581,10 +585,11 @@ fun DashboardContent(
         )
         
         Text(
-            text = "ABOUDA.AL.SHEKH.YOSSEF",
+            text = "Designed by ABOUDA.AL.SHEKH.YOSSEF",
             style = MaterialTheme.typography.labelSmall,
-            color = TextGray.copy(alpha = 0.3f),
+            color = CyberCyan.copy(alpha = 0.3f),
             fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
             letterSpacing = 2.sp,
             modifier = Modifier
                 .align(Alignment.BottomCenter)

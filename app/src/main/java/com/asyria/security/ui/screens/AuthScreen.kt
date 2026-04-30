@@ -222,6 +222,15 @@ fun BoxScope.BrandingFooter() {
             fontSize = 8.sp,
             letterSpacing = 2.sp
         )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Designed by ABOUDA.AL.SHEKH.YOSSEF",
+            style = MaterialTheme.typography.labelSmall,
+            color = CyberCyan.copy(alpha = 0.3f),
+            fontSize = 8.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 2.sp
+        )
     }
 }
 

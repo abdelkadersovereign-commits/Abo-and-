@@ -53,8 +53,8 @@ data class DashboardUiState(
     val auditReport: AuditReport? = null,
     val showSettings: Boolean = false,
     // Phase 2 Features
-    val userName: String = "Abdelkader",
-    val userRole: String = "Lead Inventor",
+    val userName: String = "Sovereign User",
+    val userRole: String = "Neural Architect",
     val userBio: String = "Guardian of the Digital Fortress",
     val profileImageUri: String? = null,
     val isBiometricEnabled: Boolean = false,
