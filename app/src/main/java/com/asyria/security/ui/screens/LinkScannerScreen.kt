@@ -36,7 +36,7 @@ fun LinkScannerScreen(onClose: () -> Unit) {
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
-    val coroutineScope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     var showQrScanner by remember { mutableStateOf(false) }
 
     if (showQrScanner) {
@@ -131,7 +131,7 @@ fun LinkScannerScreen(onClose: () -> Unit) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         isScanning = true
                         scanResult = null
-                        coroutineScope.launch {
+                        scope.launch {
                             val result = com.asyria.security.services.UrlReputationService.analyzeUrl(urlInput)
                             scanResult = ScanResult(
                                 verdict = if (result.isSafe) "Clear" else "Warning/Threat",
