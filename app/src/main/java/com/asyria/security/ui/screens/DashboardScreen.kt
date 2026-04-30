@@ -58,6 +58,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -222,6 +225,8 @@ fun DashboardContent(
 
     // 2. Global Touch Tracking for Magnetic Pull
     var globalTouchPos by remember { mutableStateOf<Offset?>(null) }
+    var showAIChat by remember { mutableStateOf(false) }
+    var alpha by remember { mutableStateOf(1f) }
 
     // 3. Zenith Protocol: Boot Sequence Logic
     var bootComplete by remember { mutableStateOf(false) }
@@ -250,6 +255,14 @@ fun DashboardContent(
 
     // Dynamic Atmosphere Animation
     val infiniteTransition = rememberInfiniteTransition(label = "Atmosphere")
+    
+    val shimmerTranslate by infiniteTransition.animateFloat(
+        initialValue = -1000f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing)),
+        label = "Shimmer"
+    )
+
     val shadowOffset by infiniteTransition.animateValue(
         initialValue = Offset(-4f, -4f),
         targetValue = Offset(4f, 4f),
@@ -1279,9 +1292,6 @@ fun SecuritySettingsPanel(
     }
 }
 
-
-@Composable
-// Unused Spiritual Hub logic removed to use PrayerTimesModule.kt
 
 @Composable
 fun MythicalIconView(type: MythicalIcon) {

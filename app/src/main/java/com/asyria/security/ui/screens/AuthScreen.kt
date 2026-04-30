@@ -39,6 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -196,7 +199,7 @@ fun SophisticatedWelcome(mode: ThemeMode) {
 }
 
 @Composable
-fun BrandingFooter() {
+fun BoxScope.BrandingFooter() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
