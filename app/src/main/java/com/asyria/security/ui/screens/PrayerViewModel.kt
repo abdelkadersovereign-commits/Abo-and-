@@ -14,7 +14,12 @@ import java.util.*
 
 import androidx.work.*
 import com.asyria.security.worker.NotificationWorker
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import java.util.concurrent.TimeUnit
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 
 data class PrayerUiState(
     val timings: Timings? = null,
@@ -24,7 +29,8 @@ data class PrayerUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isHubOpen: Boolean = false,
-    val supplications: List<SupplicationEntity> = emptyList()
+    val supplications: List<SupplicationEntity> = emptyList(),
+    val city: String = "Detecting Sovereignty..."
 )
 
 class PrayerViewModel(application: Application) : AndroidViewModel(application) {
@@ -33,6 +39,8 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     private val db = AppDatabase.getDatabase(application)
     private val workManager = WorkManager.getInstance(application)
+    private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(application)
+    
     private val api = Retrofit.Builder()
         .baseUrl(AladhanApi.BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
@@ -42,9 +50,27 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private var timer: Timer? = null
 
     init {
-        fetchPrayerTimes()
+        initSpiritualCore()
         loadSupplications()
         startCountdownTimer()
+    }
+
+    private fun initSpiritualCore() {
+        viewModelScope.launch {
+            if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                    .addOnSuccessListener { location ->
+                        if (location != null) {
+                            fetchPrayerTimes(location.latitude, location.longitude)
+                        } else {
+                            fetchPrayerTimes() // Fallback to default
+                        }
+                    }
+                    .addOnFailureListener { fetchPrayerTimes() }
+            } else {
+                fetchPrayerTimes()
+            }
+        }
     }
 
     private fun loadSupplications() {
@@ -69,16 +95,37 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.value = _uiState.value.copy(isHubOpen = open)
     }
 
-    fun fetchPrayerTimes() {
+    fun fetchPrayerTimes(lat: Double? = null, lon: Double? = null) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             
+            // If location provided, we refresh to be accurate
+            if (lat != null && lon != null) {
+                try {
+                    val response = api.getTimingsByLocation(lat, lon)
+                    val timings = response.data.timings
+                    val city = response.data.meta.timezone
+                    
+                    _uiState.value = _uiState.value.copy(
+                        timings = timings,
+                        city = city,
+                        isLoading = false
+                    )
+                    updateNextPrayer()
+                    scheduleNotifications()
+                    return@launch
+                } catch (e: Exception) {
+                    // Fallback to cache if location fails
+                }
+            }
+
             val localTimes = db.prayerDao().getPrayerTimesForDate(today)
             if (localTimes != null) {
                 _uiState.value = _uiState.value.copy(
                     timings = Timings(localTimes.fajr, localTimes.dhuhr, localTimes.asr, localTimes.maghrib, localTimes.isha),
-                    isLoading = false
+                    isLoading = false,
+                    city = "Local Sanctuary Cache"
                 )
                 updateNextPrayer()
                 scheduleNotifications()
@@ -100,6 +147,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                     
                     _uiState.value = _uiState.value.copy(
                         timings = timings,
+                        city = "Al-Sham (Default)",
                         isLoading = false
                     )
                     updateNextPrayer()
@@ -107,7 +155,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 } catch (e: Exception) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "Failed to sync spiritual timing fragments."
+                        error = "Sanctuary sync failed. Neural link timeout."
                     )
                 }
             }

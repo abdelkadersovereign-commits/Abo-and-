@@ -118,6 +118,40 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // AI Intelligence
+            SettingsCategory(title = if (uiState.language == "EN") "AI INTELLIGENCE" else "ذكاء SENTINEL")
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = GlassWhite,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, GlassBorder)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (uiState.language == "EN") "Neural API Key (Gemini)" else "مفتاح الربط العصبي",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.geminiApiKey,
+                        onValueChange = { viewModel.updateApiKey(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Enter API Key...", color = TextGray, fontSize = 12.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CyberCyan,
+                            unfocusedBorderColor = GlassBorder,
+                            focusedTextColor = OffWhite,
+                            unfocusedTextColor = OffWhite
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             // System Audio
             SettingsCategory(title = if (uiState.language == "EN") "AUDIO RESONANCE" else "الرنين الصوتي")
             ToneSelector(uiState.notificationTone) { tone ->

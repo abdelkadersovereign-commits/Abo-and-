@@ -74,7 +74,7 @@ class AuthViewModel : ViewModel() {
         if (!hasError) {
             _uiState.value = _uiState.value.copy(isLoading = true)
             viewModelScope.launch {
-                // Simulation of network call
+                // Simulation of network call for now, but enforces validation
                 kotlinx.coroutines.delay(1500)
                 _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
                 sessionManager?.setLoggedIn(true)

@@ -50,7 +50,7 @@ fun SpiritualHub(
                 .statusBarsPadding()
         ) {
             // Animated Header
-            HeaderBlock(onClose)
+            HeaderBlock(uiState.city, onClose)
 
             // Dynamic Content Area
             Box(modifier = Modifier.weight(1f)) {
@@ -75,7 +75,7 @@ fun SpiritualHub(
 }
 
 @Composable
-fun HeaderBlock(onClose: () -> Unit) {
+fun HeaderBlock(city: String, onClose: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -91,11 +91,15 @@ fun HeaderBlock(onClose: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp
             )
-            Text(
-                text = "Syncing Soul & System",
-                style = MaterialTheme.typography.labelSmall,
-                color = TextGray
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.LocationOn, null, tint = TextGray, modifier = Modifier.size(10.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = city,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextGray
+                )
+            }
         }
         IconButton(
             onClick = onClose,

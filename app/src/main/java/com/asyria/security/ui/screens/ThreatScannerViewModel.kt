@@ -92,20 +92,21 @@ class ThreatScannerViewModel(application: Application) : AndroidViewModel(applic
     private fun startScanner() {
         viewModelScope.launch {
             // Initial traffic data
-            val initialTraffic = List(30) { (10..100).random().toFloat() }
+            val initialTraffic = List(30) { (10..60).random().toFloat() }
             _uiState.value = _uiState.value.copy(trafficData = initialTraffic)
 
             while (_uiState.value.isScanning) {
-                delay(1200)
+                delay(2000)
                 updateTraffic()
                 
-                // Randomly detect non-lethal protocol info
-                val proto = listOf("TCP", "UDP", "HTTP", "HTTPS", "TLS").random()
-                _logs.add("[SECURE] ${dateFormat.format(Date())} | $proto HANDSHAKE SUCCESS")
-                if (_logs.size > 20) _logs.removeAt(0)
+                // Randomly detect non-lethal protocol info based on current state
+                val proto = listOf("TCP", "UDP", "TLS", "QUIC", "DNS").random()
+                val port = listOf(80, 443, 8080, 53, 22).random()
+                _logs.add("[INFO] ${dateFormat.format(Date())} | ACTIVE CONNECTION: $proto:$port -> ESTABLISHED")
+                if (_logs.size > 25) _logs.removeAt(0)
 
-                // Randomly detect a threat (approx 10% chance per tick)
-                if (Random().nextFloat() > 0.9f) {
+                // Detect threat with small probability
+                if (Random().nextFloat() > 0.95f) {
                     recordThreat()
                 }
             }

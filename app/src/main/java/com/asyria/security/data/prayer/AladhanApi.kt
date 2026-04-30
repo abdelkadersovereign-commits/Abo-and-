@@ -11,6 +11,13 @@ interface AladhanApi {
         @Query("method") method: Int = 2
     ): PrayerApiResponse
 
+    @GET("timings")
+    suspend fun getTimingsByLocation(
+        @Query("latitude") latitude: Double,
+        @Query("longitude") longitude: Double,
+        @Query("method") method: Int = 2
+    ): PrayerApiResponse
+
     companion object {
         const val BASE_URL = "https://api.aladhan.com/v1/"
     }

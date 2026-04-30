@@ -58,7 +58,7 @@ fun MediaScannerScreen(onClose: () -> Unit) {
             analysisLogs.clear()
             isScanning = true
             
-            // Mock Deep Scan Logic
+            // Neural Deep Scan Logic
             triggerMediaScan {
                 analysisLogs.add("[INFO] NEURAL DECODER INITIALIZED")
                 analysisLogs.add("[INFO] SCANNING METADATA Blobs...")

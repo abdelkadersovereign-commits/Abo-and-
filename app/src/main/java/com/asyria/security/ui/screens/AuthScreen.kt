@@ -340,8 +340,7 @@ fun LoginFormScreen(
                     Button(
                         onClick = { 
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            // Bypass directly to dashboard as requested
-                            onAuthSuccess()
+                            viewModel.authenticate()
                         },
                         modifier = Modifier
                             .fillMaxWidth()

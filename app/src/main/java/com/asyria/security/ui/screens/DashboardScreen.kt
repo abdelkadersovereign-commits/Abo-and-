@@ -255,6 +255,28 @@ fun DashboardContent(
     // Dynamic Atmosphere Animation
     val infiniteTransition = rememberInfiniteTransition(label = "Atmosphere")
     
+    // Permissions Request Logic
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all { it.value }
+        if (!allGranted) {
+            // Log or show feedback about limited functionality
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                android.Manifest.permission.CAMERA,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            )
+        )
+    }
+
     val shimmerTranslate by infiniteTransition.animateFloat(
         initialValue = -1000f,
         targetValue = 1000f,
