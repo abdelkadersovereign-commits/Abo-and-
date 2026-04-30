@@ -13,6 +13,7 @@ val TextGray = Color(0xFF94A3B8)
 val GlassWhite = Color(0x0DFFFFFF)
 val GlassBorder = Color(0x1AFFFFFF)
 val RiskRed = Color(0xFFFF4D4D)
+val SuccessGreen = Color(0xFF00C853)
 
 // Zen Mode Palette
 val AmberZen = Color(0xFFFFBF00)

@@ -121,7 +121,7 @@ fun FileGuardianScreen(onClose: () -> Unit) {
                                 .background(CyberCyan.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.CloudUpload, color = CyberCyan, modifier = Modifier.size(32.dp), contentDescription = null)
+                            Icon(Icons.Default.CloudUpload, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(32.dp))
                         }
                         Spacer(modifier = Modifier.height(24.dp))
                         Text("SELECT SOURCE VOLUME", color = Color.White, fontWeight = FontWeight.Bold)
@@ -167,7 +167,7 @@ fun FileGuardianScreen(onClose: () -> Unit) {
                     modifier = Modifier.padding(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Lock, color = AmberZen, modifier = Modifier.size(24.dp), contentDescription = null)
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = AmberZen, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text("VAULT PROTOCOL", color = AmberZen, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
@@ -196,7 +196,7 @@ fun SecurityCertificate(name: String, size: String, score: Int) {
     ) {
         Column(modifier = Modifier.padding(32.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Verified, color = CyberCyan, modifier = Modifier.size(32.dp), contentDescription = null)
+                Icon(Icons.Default.Verified, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(32.dp))
                 Spacer(modifier = Modifier.width(16.dp))
                 Text("NEURAL PASSPORT", style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.Black)
             }

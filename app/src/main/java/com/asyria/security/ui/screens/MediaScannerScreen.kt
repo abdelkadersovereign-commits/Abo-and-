@@ -123,7 +123,7 @@ fun MediaScannerScreen(onClose: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.AddPhotoAlternate, color = CyberCyan, modifier = Modifier.size(64.dp), contentDescription = null)
+                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(64.dp))
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("IMPORT MEDIA FOR ANALYSIS", color = Color.White, fontWeight = FontWeight.Bold)
                         Text("Images or Videos up to 100MB", color = TextGray, fontSize = 12.sp)

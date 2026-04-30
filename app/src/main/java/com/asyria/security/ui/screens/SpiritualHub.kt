@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.asyria.security.ui.theme.*
 import kotlinx.coroutines.delay
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.asyria.security.data.prayer.SupplicationEntity
 
 import androidx.lifecycle.viewmodel.compose.viewModel
 

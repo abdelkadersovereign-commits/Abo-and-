@@ -28,7 +28,6 @@ import coil.compose.AsyncImage
 import com.asyria.security.ui.theme.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.style.TextAlign
-import com.asyria.security.ui.theme.ThemeLevel
 
 @Composable
 fun SettingsScreen(
@@ -171,9 +170,9 @@ fun ProfileEditor(uiState: DashboardUiState, onImageClick: () -> Unit) {
                 .clickable { onImageClick() },
             contentAlignment = Alignment.Center
         ) {
-            if (uiState.userProfileImage != null) {
+            if (uiState.profileImageUri != null) {
                 AsyncImage(
-                    model = uiState.userProfileImage,
+                    model = uiState.profileImageUri,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

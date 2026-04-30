@@ -733,7 +733,7 @@ fun MetricItem(label: String, value: String) {
 }
 
 enum class MythicalIcon {
-    Network, Threats, Files, Spiritual, Settings, Sentinel
+    Network, Threats, Files, Spiritual, Settings, Sentinel, Camera, Scanner
 }
 
 @Composable
@@ -1406,6 +1406,21 @@ fun MythicalIconView(type: MythicalIcon) {
             )
             Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = NeonBlue, modifier = Modifier.size(32.dp).graphicsLayer { scaleX = pulse; scaleY = pulse })
+            }
+        }
+        MythicalIcon.Camera -> {
+            Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.CameraAlt, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(28.dp))
+            }
+        }
+        MythicalIcon.Scanner -> {
+            val scanAnim by infiniteTransition.animateFloat(
+                initialValue = -10f, targetValue = 10f,
+                animationSpec = infiniteRepeatable(tween(1000, easing = LinearEasing), RepeatMode.Reverse), label = "ScanLine"
+            )
+            Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = CyberCyan, modifier = Modifier.size(28.dp))
+                Box(Modifier.size(28.dp).offset(y = scanAnim.dp).background(CyberCyan.copy(alpha = 0.3f)).height(1.dp).fillMaxWidth())
             }
         }
     }
