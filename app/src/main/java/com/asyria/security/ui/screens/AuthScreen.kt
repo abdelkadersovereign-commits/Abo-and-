@@ -86,7 +86,8 @@ fun AuthScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    .padding(padding),
+                contentAlignment = Alignment.TopCenter
             ) {
                 // Background
                 if (uiState.themeMode == ThemeMode.STANDARD) {
@@ -152,7 +153,7 @@ fun SophisticatedWelcome(mode: ThemeMode) {
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(top = 48.dp, horizontal = 24.dp)
+            .padding(start = 24.dp, top = 48.dp, end = 24.dp)
             .drawBehind {
                 // Moving Glowing Background (Shimmer)
                 drawRect(

@@ -429,13 +429,15 @@ fun RadarSweep() {
             color = CyberCyan.copy(alpha = 0.1f),
             start = Offset(0f, size.height/2),
             end = Offset(size.width, size.height/2),
-            style = stroke
+            strokeWidth = stroke.width,
+            pathEffect = stroke.pathEffect
         )
         drawLine(
             color = CyberCyan.copy(alpha = 0.1f),
             start = Offset(size.width/2, 0f),
             end = Offset(size.width/2, size.height),
-            style = stroke
+            strokeWidth = stroke.width,
+            pathEffect = stroke.pathEffect
         )
 
         // Sweep
