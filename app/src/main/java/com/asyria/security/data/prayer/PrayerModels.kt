@@ -29,7 +29,8 @@ data class PrayerApiResponse(
 
 data class PrayerData(
     val timings: Timings,
-    val date: DateInfo
+    val date: DateInfo,
+    val meta: MetaInfo
 )
 
 data class Timings(
@@ -43,4 +44,8 @@ data class Timings(
 data class DateInfo(
     val readable: String,
     val timestamp: String
+)
+
+data class MetaInfo(
+    val timezone: String
 )

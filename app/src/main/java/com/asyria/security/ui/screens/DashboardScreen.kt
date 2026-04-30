@@ -16,6 +16,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -57,6 +59,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.draw.alpha
@@ -174,23 +177,29 @@ fun DashboardContent(
 ) {
     val layoutDirection = if (uiState.language == "AR") androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection) {
-        val context = LocalContext.current
+    // 0. Permissions
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
-    // 0. Permissions for Camera
-    var hasCameraPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        )
-    }
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasCameraPermission = isGranted
-        if (isGranted) {
-            viewModel.setScannerOpen(true)
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all { it.value }
+        if (!allGranted) {
+            // Log or show feedback about limited functionality
         }
+    }
+
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                android.Manifest.permission.CAMERA,
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.READ_EXTERNAL_STORAGE,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            )
+        )
     }
 
     // 1. Gyroscope / Accelerometer Sensor Logic
@@ -252,28 +261,6 @@ fun DashboardContent(
     // Dynamic Atmosphere Animation
     val infiniteTransition = rememberInfiniteTransition(label = "Atmosphere")
     
-    // Permissions Request Logic
-    val context = LocalContext.current
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.entries.all { it.value }
-        if (!allGranted) {
-            // Log or show feedback about limited functionality
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(
-            arrayOf(
-                android.Manifest.permission.CAMERA,
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                android.Manifest.permission.READ_EXTERNAL_STORAGE,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            )
-        )
-    }
-
     val shimmerTranslate by infiniteTransition.animateFloat(
         initialValue = -1000f,
         targetValue = 1000f,
