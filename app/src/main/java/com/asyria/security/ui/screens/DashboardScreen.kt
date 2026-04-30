@@ -85,6 +85,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.asyria.security.ui.components.ScannerOverlay
 
 // Custom Modifier for Cyber Glow & Liquid Light Scale
 @Composable
@@ -880,8 +881,6 @@ fun ModuleCard(
         }
     }
 }
-
-import com.asyria.security.ui.components.ScannerOverlay
 
 @Composable
 fun AuditReportDialog(

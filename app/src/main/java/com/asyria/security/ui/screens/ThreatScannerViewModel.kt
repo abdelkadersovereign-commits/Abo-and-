@@ -22,6 +22,12 @@ import java.net.NetworkInterface
 import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Log
+import android.net.TrafficStats
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.InetAddress
+import java.net.Socket
+import java.net.InetSocketAddress
 
 private val android.content.Context.dataStore by preferencesDataStore(name = "threat_ledger")
 
@@ -46,13 +52,6 @@ data class ThreatScannerUiState(
     val activeTab: Int = 0,
     val threatLogs: List<ThreatEntry> = emptyList()
 )
-
-import android.net.TrafficStats
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.net.InetAddress
-import java.net.Socket
-import java.net.InetSocketAddress
 
 class ThreatScannerViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStore = application.dataStore

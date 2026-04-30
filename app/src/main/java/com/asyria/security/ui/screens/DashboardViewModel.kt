@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 
 import androidx.lifecycle.viewModelScope
 import com.google.ai.client.generativeai.GenerativeModel
@@ -65,9 +67,6 @@ data class DashboardUiState(
     val themeLevel: ThemeLevel = ThemeLevel.CYBER_NOIR,
     val notificationTone: String = "Calm Horizon"
 )
-
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(DashboardUiState())
