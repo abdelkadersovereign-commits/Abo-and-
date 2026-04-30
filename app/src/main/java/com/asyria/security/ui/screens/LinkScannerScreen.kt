@@ -20,12 +20,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.asyria.security.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch // أضفنا هذا السطر لإصلاح خطأ launch
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.asyria.security.ui.components.ScannerOverlay
 
@@ -36,7 +35,7 @@ fun LinkScannerScreen(onClose: () -> Unit) {
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope() // هذا السطر الآن يعمل بفضل الـ imports
     var showQrScanner by remember { mutableStateOf(false) }
 
     if (showQrScanner) {
@@ -131,16 +130,30 @@ fun LinkScannerScreen(onClose: () -> Unit) {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         isScanning = true
                         scanResult = null
+                        
+                        // استخدام scope.launch بشكل صحيح لاستدعاء دالة suspend
                         scope.launch {
-                            val result = com.asyria.security.services.UrlReputationService.analyzeUrl(urlInput)
-                            scanResult = ScanResult(
-                                verdict = if (result.isSafe) "Clear" else "Warning/Threat",
-                                description = result.details.joinToString("\n"),
-                                isSafe = result.isSafe,
-                                protocol = if (urlInput.startsWith("https")) "TLS_ENCRYPTED" else "UNENCRYPTED_TCP",
-                                statusColor = if (result.isSafe) SuccessGreen else RiskRed
-                            )
-                            isScanning = false
+                            try {
+                                val result = com.asyria.security.services.UrlReputationService.analyzeUrl(urlInput)
+                                scanResult = ScanResult(
+                                    verdict = if (result.isSafe) "Clear" else "Warning/Threat",
+                                    description = result.details.joinToString("\n"),
+                                    isSafe = result.isSafe,
+                                    protocol = if (urlInput.startsWith("https")) "TLS_ENCRYPTED" else "UNENCRYPTED_TCP",
+                                    statusColor = if (result.isSafe) SuccessGreen else RiskRed
+                                )
+                            } catch (e: Exception) {
+                                // في حال فشل الاتصال بالانترنت
+                                scanResult = ScanResult(
+                                    verdict = "SCAN FAILED",
+                                    description = "Internet connection required for neural analysis.",
+                                    isSafe = false,
+                                    protocol = "OFFLINE",
+                                    statusColor = Color.Gray
+                                )
+                            } finally {
+                                isScanning = false
+                            }
                         }
                     } else {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -216,7 +229,7 @@ fun ResultCard(result: ScanResult) {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            Divider(color = GlassBorder, modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(color = GlassBorder, modifier = Modifier.padding(vertical = 8.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
