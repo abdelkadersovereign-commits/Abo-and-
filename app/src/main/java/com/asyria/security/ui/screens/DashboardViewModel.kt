@@ -45,6 +45,9 @@ data class DashboardUiState(
     val activeScanType: ScanType = ScanType.SYSTEM,
     val isFileGuardianOpen: Boolean = false,
     val isNetworkScannerOpen: Boolean = false,
+    val isThreatScannerOpen: Boolean = false,
+    val isLinkScannerOpen: Boolean = false,
+    val isMediaScannerOpen: Boolean = false,
     val geminiApiKey: String = "",
     val isScannerOpen: Boolean = false,
     val auditReport: AuditReport? = null,
@@ -129,6 +132,18 @@ class DashboardViewModel : ViewModel() {
 
     fun toggleNetworkScanner(open: Boolean) {
         _uiState.value = _uiState.value.copy(isNetworkScannerOpen = open)
+    }
+
+    fun toggleThreatScanner(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isThreatScannerOpen = open)
+    }
+
+    fun toggleLinkScanner(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isLinkScannerOpen = open)
+    }
+
+    fun toggleMediaScanner(open: Boolean) {
+        _uiState.value = _uiState.value.copy(isMediaScannerOpen = open)
     }
 
     fun toggleLanguage() {

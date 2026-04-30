@@ -12,6 +12,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.work.*
+import com.asyria.security.worker.NotificationWorker
+import java.util.concurrent.TimeUnit
+
 data class PrayerUiState(
     val timings: Timings? = null,
     val nextPrayerName: String = "",
@@ -19,7 +23,8 @@ data class PrayerUiState(
     val countdown: String = "00:00:00",
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isHubOpen: Boolean = false
+    val isHubOpen: Boolean = false,
+    val supplications: List<SupplicationEntity> = emptyList()
 )
 
 class PrayerViewModel(application: Application) : AndroidViewModel(application) {
@@ -27,6 +32,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     val uiState: StateFlow<PrayerUiState> = _uiState.asStateFlow()
 
     private val db = AppDatabase.getDatabase(application)
+    private val workManager = WorkManager.getInstance(application)
     private val api = Retrofit.Builder()
         .baseUrl(AladhanApi.BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
@@ -37,7 +43,26 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         fetchPrayerTimes()
+        loadSupplications()
         startCountdownTimer()
+    }
+
+    private fun loadSupplications() {
+        viewModelScope.launch {
+            val list = db.supplicationDao().getAllSupplications()
+            if (list.isEmpty()) {
+                val seed = listOf(
+                    SupplicationEntity(category = "Morning", content = "أصبحنا وأصبح الملك لله", translation = "The morning has come to us and the dominion belongs to Allah", resonance = "Atmospheric Uplift"),
+                    SupplicationEntity(category = "Evening", content = "أمسى وأمسى الملك لله", translation = "The evening has come to us and the dominion belongs to Allah", resonance = "Neural Calm"),
+                    SupplicationEntity(category = "Soul Calming", content = "يا حي يا قيوم برحمتك أستغيث", translation = "O Ever-Living, O Sustainer, by Your mercy I seek help", resonance = "Deep Sanctuary"),
+                    SupplicationEntity(category = "Misc", content = "لا إله إلا الله", translation = "There is no god but Allah", resonance = "Universal Oneness")
+                )
+                db.supplicationDao().insertSupplications(seed)
+                _uiState.value = _uiState.value.copy(supplications = seed)
+            } else {
+                _uiState.value = _uiState.value.copy(supplications = list)
+            }
+        }
     }
 
     fun setHubOpen(open: Boolean) {
@@ -49,7 +74,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.value = _uiState.value.copy(isLoading = true)
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             
-            // Try local first
             val localTimes = db.prayerDao().getPrayerTimesForDate(today)
             if (localTimes != null) {
                 _uiState.value = _uiState.value.copy(
@@ -57,13 +81,12 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                     isLoading = false
                 )
                 updateNextPrayer()
+                scheduleNotifications()
             } else {
-                // Fetch from API (defaulting to Damascus for this demo, or we could use location)
                 try {
                     val response = api.getTimings("Damascus", "Syria")
                     val timings = response.data.timings
                     
-                    // Cache it
                     db.prayerDao().insertPrayerTimes(
                         PrayerTimesEntity(
                             date = today,
@@ -80,12 +103,50 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                         isLoading = false
                     )
                     updateNextPrayer()
+                    scheduleNotifications()
                 } catch (e: Exception) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = "Failed to sync spiritual timing fragments."
                     )
                 }
+            }
+        }
+    }
+
+    private fun scheduleNotifications() {
+        val timings = _uiState.value.timings ?: return
+        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val now = Calendar.getInstance()
+
+        val prayers = listOf(
+            "Fajr" to timings.Fajr,
+            "Dhuhr" to timings.Dhuhr,
+            "Asr" to timings.Asr,
+            "Maghrib" to timings.Maghrib,
+            "Isha" to timings.Isha
+        )
+
+        workManager.cancelAllWorkByTag("prayer_sync")
+
+        for (prayer in prayers) {
+            val prayerTime = sdf.parse(prayer.second.substringBefore(" ")) ?: continue
+            val prayerCal = Calendar.getInstance().apply {
+                time = prayerTime
+                set(Calendar.YEAR, now.get(Calendar.YEAR))
+                set(Calendar.MONTH, now.get(Calendar.MONTH))
+                set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH))
+            }
+
+            if (prayerCal.after(now)) {
+                val delay = prayerCal.timeInMillis - now.timeInMillis
+                val data = workDataOf("prayer_name" to prayer.first)
+                val request = OneTimeWorkRequestBuilder<NotificationWorker>()
+                    .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+                    .setInputData(data)
+                    .addTag("prayer_sync")
+                    .build()
+                workManager.enqueue(request)
             }
         }
     }

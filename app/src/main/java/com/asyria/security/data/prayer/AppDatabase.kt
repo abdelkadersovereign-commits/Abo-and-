@@ -12,9 +12,22 @@ interface PrayerDao {
     suspend fun insertPrayerTimes(prayerTimes: PrayerTimesEntity)
 }
 
-@Database(entities = [PrayerTimesEntity::class], version = 1, exportSchema = false)
+@Dao
+interface SupplicationDao {
+    @Query("SELECT * FROM supplications")
+    suspend fun getAllSupplications(): List<SupplicationEntity>
+
+    @Query("SELECT * FROM supplications WHERE category = :category")
+    suspend fun getSupplicationsByCategory(category: String): List<SupplicationEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSupplications(supplications: List<SupplicationEntity>)
+}
+
+@Database(entities = [PrayerTimesEntity::class, SupplicationEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun prayerDao(): PrayerDao
+    abstract fun supplicationDao(): SupplicationDao
 
     companion object {
         @Volatile
@@ -26,7 +39,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "asyria_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

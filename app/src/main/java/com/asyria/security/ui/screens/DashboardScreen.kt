@@ -420,9 +420,11 @@ fun DashboardContent(
                 ) {
                     val modules = listOf(
                         Triple("Network Scanner", "Topology Map", MythicalIcon.Network) to { viewModel.toggleNetworkScanner(true) },
+                        Triple("Link Sentinel", "URL Audit", MythicalIcon.Scanner) to { viewModel.toggleLinkScanner(true) },
+                        Triple("Media Scanner", "Vision Audit", MythicalIcon.Camera) to { viewModel.toggleMediaScanner(true) },
                         Triple("Spiritual Hub", "Neural Balance", MythicalIcon.Spiritual) to { viewModel.toggleSpiritualHub(true) },
                         Triple("Sentinel AI", "Core Intel", MythicalIcon.Sentinel) to { viewModel.toggleAiOverlay(true) },
-                        Triple("Threat Analysis", "System Integrity", MythicalIcon.Threats) to { viewModel.setScannerOpen(true, ScanType.THREAT) },
+                        Triple("Threat Analysis", "System Integrity", MythicalIcon.Threats) to { viewModel.toggleThreatScanner(true) },
                         Triple("File Guardian", "Vault Protocol", MythicalIcon.Files) to { viewModel.toggleFileGuardian(true) },
                         Triple("System Settings", "Config & Keys", MythicalIcon.Settings) to { viewModel.toggleSettings(true) }
                     )
@@ -489,6 +491,18 @@ fun DashboardContent(
             NetworkScannerOverlay(onClose = { viewModel.toggleNetworkScanner(false) })
         }
 
+        if (uiState.isThreatScannerOpen) {
+            NetworkScannerScreen(onClose = { viewModel.toggleThreatScanner(false) })
+        }
+
+        if (uiState.isLinkScannerOpen) {
+            LinkScannerScreen(onClose = { viewModel.toggleLinkScanner(false) })
+        }
+
+        if (uiState.isMediaScannerOpen) {
+            MediaScannerScreen(onClose = { viewModel.toggleMediaScanner(false) })
+        }
+
         if (uiState.showSettings) {
             SettingsScreen(
                 uiState = uiState,
@@ -498,7 +512,7 @@ fun DashboardContent(
         }
 
         if (uiState.isFileGuardianOpen) {
-            FileGuardianOverlay(onClose = { viewModel.toggleFileGuardian(false) })
+            FileGuardianScreen(onClose = { viewModel.toggleFileGuardian(false) })
         }
 
         uiState.auditReport?.let { report ->

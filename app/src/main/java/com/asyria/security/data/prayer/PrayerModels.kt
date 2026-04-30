@@ -12,6 +12,15 @@ data class PrayerTimesEntity(
     val isha: String
 )
 
+@Entity(tableName = "supplications")
+data class SupplicationEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val category: String,
+    val content: String,
+    val translation: String,
+    val resonance: String // High-tech artistic label for the effect
+)
+
 data class PrayerApiResponse(
     val code: Int,
     val status: String,
