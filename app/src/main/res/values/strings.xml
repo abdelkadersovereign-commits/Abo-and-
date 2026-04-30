@@ -7,4 +7,49 @@
     <string name="google_sign_in">Continue with Google</string>
     <string name="designer_name">ABOUDA.AL.SHEKH.YOSSEF</string>
     <string name="welcome_sentinel">Welcome, Sentinel</string>
+
+    <!-- AdhanWorker Strings -->
+    <string name="adhan_default_prayer_name">Adhan</string>
+    <string name="adhan_notification_channel_name">Adhan Notifications</string>
+    <string name="adhan_notification_channel_description">Notifications for prayer times and daily verses</string>
+    <string name="quran_verse_1">""وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ" (57:4)"</string>
+    <string name="quran_verse_2">""أَلَا بِذِكْرِ اللِهِ تَطْمَئِنُّ الْقُلُوبُ" (13:28)"</string>
+    <string name="quran_verse_3">""إِنَّ مَعَ الْعُسْرِ يُسْرًا" (94:6)"</string>
+    <string name="quran_verse_4">""وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ" (2:45)"</string>
+    <string name="prayer_time_notification_title">حان الآن موعد صلاة %1$s</string>
+
+    <!-- PrayerViewModel Strings -->
+    <string name="detecting_sovereignty">Detecting Sovereignty...</string>
+    <string name="local_sanctuary_cache">Local Sanctuary Cache</string>
+    <string name="default_city">Al-Sham (Default)</string>
+    <string name="damascus">Damascus</string>
+    <string name="syria">Syria</string>
+    <string name="error_sanctuary_sync">Sanctuary sync failed. Neural link timeout.</string>
+
+    <!-- Prayer Names -->
+    <string name="prayer_fajr">Fajr</string>
+    <string name="prayer_dhuhr">Dhuhr</string>
+    <string name="prayer_asr">Asr</string>
+    <string name="prayer_maghrib">Maghrib</string>
+    <string name="prayer_isha">Isha</string>
+
+    <!-- Supplication Categories -->
+    <string name="supplication_category_morning">Morning</string>
+    <string name="supplication_category_evening">Evening</string>
+    <string name="supplication_category_soul_calming">Soul Calming</string>
+    <string name="supplication_category_misc">Misc</string>
+
+    <!-- Supplications -->
+    <string name="morning_supplication_content">أصبحنا وأصبح الملك لله</string>
+    <string name="morning_supplication_translation">The morning has come to us and the dominion belongs to Allah</string>
+    <string name="morning_supplication_resonance">Atmospheric Uplift</string>
+    <string name="evening_supplication_content">أمسى وأمسى الملك لله</string>
+    <string name="evening_supplication_translation">The evening has come to us and the dominion belongs to Allah</string>
+    <string name="evening_supplication_resonance">Neural Calm</string>
+    <string name="soul_calming_supplication_content">يا حي يا قيوم برحمتك أستغيث</string>
+    <string name="soul_calming_supplication_translation">O Ever-Living, O Sustainer, by Your mercy I seek help</string>
+    <string name="soul_calming_supplication_resonance">Deep Sanctuary</string>
+    <string name="misc_supplication_content">لا إله إلا الله</string>
+    <string name="misc_supplication_translation">There is no god but Allah</string>
+    <string name="misc_supplication_resonance">Universal Oneness</string>
 </resources>

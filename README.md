@@ -1,20 +1,29 @@
+# A.SYRIA Security App
+
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+## عن المشروع
 
-This contains everything you need to run your app locally.
+A.SYRIA هو تطبيق أندرويد للأمان والروحانيات، مصمم ليوفر للمستخدمين الحماية وراحة البال. تم تطويره باستخدام Kotlin و Jetpack Compose.
 
-View your app in AI Studio: https://ai.studio/apps/d7ab9b3b-a948-4737-9e0b-72bfd1a9d48f
+## كيفية تشغيل المشروع
 
-## Run Locally
+**المتطلبات:**
+*   [Android Studio](https://developer.android.com/studio)
+*   جهاز أندرويد أو محاكي
 
-**Prerequisites:**  Node.js
+**الخطوات:**
 
+1.  افتح المشروع في Android Studio.
+2.  قم بمزامنة المشروع مع ملفات Gradle.
+3.  اختر جهازًا (حقيقيًا أو محاكيًا).
+4.  اضغط على زر "Run" لتثبيت وتشغيل التطبيق.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+أو يمكنك تشغيله من خلال الطرفية:
+
+```bash
+./gradlew installDebug
+```
+

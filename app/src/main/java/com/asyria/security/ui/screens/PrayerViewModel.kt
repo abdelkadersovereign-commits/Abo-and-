@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 import androidx.work.*
+import com.asyria.security.R
 import com.asyria.security.worker.NotificationWorker
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -30,11 +31,11 @@ data class PrayerUiState(
     val error: String? = null,
     val isHubOpen: Boolean = false,
     val supplications: List<SupplicationEntity> = emptyList(),
-    val city: String = "Detecting Sovereignty..."
+    val city: String
 )
 
 class PrayerViewModel(application: Application) : AndroidViewModel(application) {
-    private val _uiState = MutableStateFlow(PrayerUiState())
+    private val _uiState = MutableStateFlow(PrayerUiState(city = application.getString(R.string.detecting_sovereignty)))
     val uiState: StateFlow<PrayerUiState> = _uiState.asStateFlow()
 
     private val db = AppDatabase.getDatabase(application)
@@ -78,10 +79,30 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             val list = db.supplicationDao().getAllSupplications()
             if (list.isEmpty()) {
                 val seed = listOf(
-                    SupplicationEntity(category = "Morning", content = "أصبحنا وأصبح الملك لله", translation = "The morning has come to us and the dominion belongs to Allah", resonance = "Atmospheric Uplift"),
-                    SupplicationEntity(category = "Evening", content = "أمسى وأمسى الملك لله", translation = "The evening has come to us and the dominion belongs to Allah", resonance = "Neural Calm"),
-                    SupplicationEntity(category = "Soul Calming", content = "يا حي يا قيوم برحمتك أستغيث", translation = "O Ever-Living, O Sustainer, by Your mercy I seek help", resonance = "Deep Sanctuary"),
-                    SupplicationEntity(category = "Misc", content = "لا إله إلا الله", translation = "There is no god but Allah", resonance = "Universal Oneness")
+                    SupplicationEntity(
+                        category = getApplication<Application>().getString(R.string.supplication_category_morning),
+                        content = getApplication<Application>().getString(R.string.morning_supplication_content),
+                        translation = getApplication<Application>().getString(R.string.morning_supplication_translation),
+                        resonance = getApplication<Application>().getString(R.string.morning_supplication_resonance)
+                    ),
+                    SupplicationEntity(
+                        category = getApplication<Application>().getString(R.string.supplication_category_evening),
+                        content = getApplication<Application>().getString(R.string.evening_supplication_content),
+                        translation = getApplication<Application>().getString(R.string.evening_supplication_translation),
+                        resonance = getApplication<Application>().getString(R.string.evening_supplication_resonance)
+                    ),
+                    SupplicationEntity(
+                        category = getApplication<Application>().getString(R.string.supplication_category_soul_calming),
+                        content = getApplication<Application>().getString(R.string.soul_calming_supplication_content),
+                        translation = getApplication<Application>().getString(R.string.soul_calming_supplication_translation),
+                        resonance = getApplication<Application>().getString(R.string.soul_calming_supplication_resonance)
+                    ),
+                    SupplicationEntity(
+                        category = getApplication<Application>().getString(R.string.supplication_category_misc),
+                        content = getApplication<Application>().getString(R.string.misc_supplication_content),
+                        translation = getApplication<Application>().getString(R.string.misc_supplication_translation),
+                        resonance = getApplication<Application>().getString(R.string.misc_supplication_resonance)
+                    )
                 )
                 db.supplicationDao().insertSupplications(seed)
                 _uiState.value = _uiState.value.copy(supplications = seed)
@@ -105,7 +126,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 _uiState.value = _uiState.value.copy(
                     timings = Timings(localTimes.fajr, localTimes.dhuhr, localTimes.asr, localTimes.maghrib, localTimes.isha),
                     isLoading = false,
-                    city = "Local Sanctuary Cache"
+                    city = getApplication<Application>().getString(R.string.local_sanctuary_cache)
                 )
                 updateNextPrayer()
                 scheduleNotifications()
@@ -120,9 +141,9 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                     timings = response.data.timings
                     city = response.data.meta.timezone
                 } else {
-                    val response = api.getTimings("Damascus", "Syria")
+                    val response = api.getTimings(getApplication<Application>().getString(R.string.damascus), getApplication<Application>().getString(R.string.syria))
                     timings = response.data.timings
-                    city = "Al-Sham (Default)"
+                    city = getApplication<Application>().getString(R.string.default_city)
                 }
                 
                 db.prayerDao().insertPrayerTimes(
@@ -146,7 +167,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = "Sanctuary sync failed. Neural link timeout."
+                    error = getApplication<Application>().getString(R.string.error_sanctuary_sync)
                 )
             }
         }
@@ -158,11 +179,11 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val now = Calendar.getInstance()
 
         val prayers = listOf(
-            "Fajr" to timings.Fajr,
-            "Dhuhr" to timings.Dhuhr,
-            "Asr" to timings.Asr,
-            "Maghrib" to timings.Maghrib,
-            "Isha" to timings.Isha
+            getApplication<Application>().getString(R.string.prayer_fajr) to timings.Fajr,
+            getApplication<Application>().getString(R.string.prayer_dhuhr) to timings.Dhuhr,
+            getApplication<Application>().getString(R.string.prayer_asr) to timings.Asr,
+            getApplication<Application>().getString(R.string.prayer_maghrib) to timings.Maghrib,
+            getApplication<Application>().getString(R.string.prayer_isha) to timings.Isha
         )
 
         workManager.cancelAllWorkByTag("prayer_sync")
@@ -204,11 +225,11 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         
         val prayers = listOf(
-            "Fajr" to timings.Fajr,
-            "Dhuhr" to timings.Dhuhr,
-            "Asr" to timings.Asr,
-            "Maghrib" to timings.Maghrib,
-            "Isha" to timings.Isha
+            getApplication<Application>().getString(R.string.prayer_fajr) to timings.Fajr,
+            getApplication<Application>().getString(R.string.prayer_dhuhr) to timings.Dhuhr,
+            getApplication<Application>().getString(R.string.prayer_asr) to timings.Asr,
+            getApplication<Application>().getString(R.string.prayer_maghrib) to timings.Maghrib,
+            getApplication<Application>().getString(R.string.prayer_isha) to timings.Isha
         )
 
         var nextItem: Pair<String, String>? = null
@@ -232,7 +253,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
 
         // If all prayers passed, next is Fajr tomorrow
         if (nextItem == null) {
-            nextItem = "Fajr" to timings.Fajr
+            nextItem = getApplication<Application>().getString(R.string.prayer_fajr) to timings.Fajr
             val prayerTime = sdf.parse(timings.Fajr.substringBefore(" "))!!
             nextTimeCal = Calendar.getInstance().apply {
                 time = prayerTime

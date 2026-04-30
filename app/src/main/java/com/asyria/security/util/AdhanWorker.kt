@@ -11,19 +11,18 @@ import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
+import com.asyria.security.R
 import java.util.concurrent.TimeUnit
 
 class AdhanWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
 
     override fun doWork(): Result {
-        // جلب اسم الصلاة من البيانات المدخلة
-        val prayerName = inputData.getString("PRAYER_NAME") ?: "Adhan"
+        val prayerName = inputData.getString("PRAYER_NAME") ?: applicationContext.getString(R.string.adhan_default_prayer_name)
         
         return try {
             showNotification(prayerName)
             Result.success()
         } catch (e: Exception) {
-            // إعادة المحاولة في حال حدوث خطأ مفاجئ لضمان دقة مواعيد الصلاة
             Result.retry()
         }
     }
@@ -32,34 +31,30 @@ class AdhanWorker(context: Context, params: WorkerParameters) : Worker(context, 
         val channelId = "adhan_channel"
         val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // إنشاء قناة الإشعارات لأنظمة أندرويد الحديثة
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId, 
-                "Adhan Notifications", 
+                applicationContext.getString(R.string.adhan_notification_channel_name), 
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notifications for prayer times and daily verses"
+                description = applicationContext.getString(R.string.adhan_notification_channel_description)
                 enableLights(true)
-                // تعيين نغمة هادئة تماشياً مع مواصفات التطبيق
                 setSound(null, null) 
             }
             manager.createNotificationChannel(channel)
         }
 
-        // الآيات القرآنية الترحيبية كما طلبت في مواصفات A.SYRIA
         val verses = listOf(
-            "\"وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ\" (57:4)",
-            "\"أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ\" (13:28)",
-            "\"إِنَّ مَعَ الْعُسْرِ يُسْرًا\" (94:6)",
-            "\"وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ\" (2:45)"
+            applicationContext.getString(R.string.quran_verse_1),
+            applicationContext.getString(R.string.quran_verse_2),
+            applicationContext.getString(R.string.quran_verse_3),
+            applicationContext.getString(R.string.quran_verse_4)
         )
         val selectedVerse = verses.random()
 
-        // بناء الإشعار بتصميم متطور
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-            .setContentTitle("حان الآن موعد صلاة $prayerName")
+            .setContentTitle(applicationContext.getString(R.string.prayer_time_notification_title, prayerName))
             .setContentText(selectedVerse)
             .setStyle(NotificationCompat.BigTextStyle().bigText(selectedVerse))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -79,10 +74,9 @@ class AdhanWorker(context: Context, params: WorkerParameters) : Worker(context, 
             val request = OneTimeWorkRequestBuilder<AdhanWorker>()
                 .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
                 .setInputData(data)
-                .addTag("adhan_tag") // وسم لتسهيل إدارة المهام
+                .addTag("adhan_tag")
                 .build()
 
-            // استخدام REPLACE لضمان عدم تكرار الإشعارات لنفس الصلاة
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "adhan_$prayerName",
                 ExistingWorkPolicy.REPLACE,
