@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.asyria.security.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
 @Composable
@@ -47,6 +48,8 @@ fun MediaScannerScreen(onClose: () -> Unit) {
     var scanComplete by remember { mutableStateOf(false) }
     var healthScore by remember { mutableIntStateOf(0) }
     var analysisLogs = remember { mutableStateListOf<String>() }
+    
+    val scope = rememberCoroutineScope()
 
     val mediaPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -58,13 +61,10 @@ fun MediaScannerScreen(onClose: () -> Unit) {
             analysisLogs.clear()
             isScanning = true
             
-            // Neural Deep Scan Logic
-            triggerMediaScan {
-                analysisLogs.add("[INFO] NEURAL DECODER INITIALIZED")
-                analysisLogs.add("[INFO] SCANNING METADATA Blobs...")
-                analysisLogs.add("[INFO] STEGANOGRAPHY CHECK: PASSED")
-                analysisLogs.add("[WARN] HEURISTIC ANOMALY DETECTED IN FRAME 242")
-                healthScore = (70..99).random()
+            scope.launch {
+                val result = com.asyria.security.services.FileScannerService.scanFile(context, it)
+                analysisLogs.addAll(result.logs)
+                healthScore = result.safetyScore
                 isScanning = false
                 scanComplete = true
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -248,10 +248,4 @@ fun MediaAnalysisReport(score: Int, logs: List<String>) {
             }
         }
     }
-}
-
-fun triggerMediaScan(onComplete: () -> Unit) {
-    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-        onComplete()
-    }, 3500)
 }

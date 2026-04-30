@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.asyria.security.ui.theme.*
 import kotlinx.coroutines.delay
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import java.net.URL
+import com.asyria.security.ui.components.ScannerOverlay
 
 @Composable
 fun LinkScannerScreen(onClose: () -> Unit) {
@@ -36,6 +36,20 @@ fun LinkScannerScreen(onClose: () -> Unit) {
     var scanResult by remember { mutableStateOf<ScanResult?>(null) }
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+    var showQrScanner by remember { mutableStateOf(false) }
+
+    if (showQrScanner) {
+        ScannerOverlay(
+            onBarcodeDetected = { payload ->
+                showQrScanner = false
+                urlInput = payload
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            },
+            onClose = { showQrScanner = false }
+        )
+        return
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -95,9 +109,14 @@ fun LinkScannerScreen(onClose: () -> Unit) {
                     cursorColor = CyberCyan
                 ),
                 trailingIcon = {
-                    if (urlInput.isNotEmpty()) {
-                        IconButton(onClick = { urlInput = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = null, tint = TextGray)
+                    Row {
+                        if (urlInput.isNotEmpty()) {
+                            IconButton(onClick = { urlInput = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = null, tint = TextGray)
+                            }
+                        }
+                        IconButton(onClick = { showQrScanner = true }) {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan QR", tint = CyberCyan)
                         }
                     }
                 }
@@ -110,12 +129,19 @@ fun LinkScannerScreen(onClose: () -> Unit) {
                     if (isValidUrl(urlInput)) {
                         focusManager.clearFocus()
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        runScanner(urlInput) { result ->
-                            scanResult = result
-                            isScanning = false
-                        }
                         isScanning = true
                         scanResult = null
+                        scope.launch {
+                            val result = com.asyria.security.services.UrlReputationService.analyzeUrl(urlInput)
+                            scanResult = ScanResult(
+                                verdict = if (result.isSafe) "Clear" else "Warning/Threat",
+                                description = result.details.joinToString("\n"),
+                                isSafe = result.isSafe,
+                                protocol = if (urlInput.startsWith("https")) "TLS_ENCRYPTED" else "UNENCRYPTED_TCP",
+                                statusColor = if (result.isSafe) SuccessGreen else RiskRed
+                            )
+                            isScanning = false
+                        }
                     } else {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     }
@@ -213,34 +239,4 @@ data class ScanResult(
 
 fun isValidUrl(url: String): Boolean {
     return Patterns.WEB_URL.matcher(url).matches()
-}
-
-fun runScanner(url: String, onComplete: (ScanResult) -> Unit) {
-    // Artificial delay to simulate background processing
-    val isMalicious = url.contains("phish") || url.contains("malware") || url.contains("crack")
-    val protocol = if (url.startsWith("https")) "TLS_ENCRYPTED" else "UNENCRYPTED_TCP"
-    
-    // In a real app, this would call the Gemini API or a security service
-    val result = if (!isMalicious) {
-        ScanResult(
-            verdict = "Clear",
-            description = "Neural analysis confirms no known threat vectors found. Protocol integrity verified.",
-            isSafe = true,
-            protocol = protocol,
-            statusColor = SuccessGreen
-        )
-    } else {
-        ScanResult(
-            verdict = "Critical Threat",
-            description = "Suspicious neural fingerprint detected. Potential phishing or data exfiltration site identified.",
-            isSafe = false,
-            protocol = protocol,
-            statusColor = RiskRed
-        )
-    }
-
-    // Launch completion after delay
-    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-        onComplete(result)
-    }, 2500)
 }

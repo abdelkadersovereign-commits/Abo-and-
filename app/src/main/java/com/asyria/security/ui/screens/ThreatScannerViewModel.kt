@@ -1,6 +1,9 @@
 package com.asyria.security.ui.screens
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.compose.runtime.mutableStateListOf
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.net.NetworkInterface
 import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Log
@@ -43,6 +47,13 @@ data class ThreatScannerUiState(
     val threatLogs: List<ThreatEntry> = emptyList()
 )
 
+import android.net.TrafficStats
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.InetAddress
+import java.net.Socket
+import java.net.InetSocketAddress
+
 class ThreatScannerViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStore = application.dataStore
     private val THREAT_KEY = stringPreferencesKey("threat_logs")
@@ -56,9 +67,45 @@ class ThreatScannerViewModel(application: Application) : AndroidViewModel(applic
 
     private val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
+    private var previousRxBytes: Long = 0L
+    private var previousTxBytes: Long = 0L
+
     init {
+        detectNetwork()
         loadThreats()
         startScanner()
+    }
+
+    private fun detectNetwork() {
+        val connectivityManager = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val caps = connectivityManager.getNetworkCapabilities(network)
+        
+        val type = if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) "WIFI_SECURE"
+        else if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) "CELLULAR_UPLINK"
+        else "OFFLINE_VAULT"
+        
+        var ip = "127.0.0.1"
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            while (interfaces?.hasMoreElements() == true) {
+                val iface = interfaces.nextElement()
+                val addrs = iface.inetAddresses
+                while (addrs.hasMoreElements()) {
+                    val addr = addrs.nextElement()
+                    if (!addr.isLoopbackAddress && addr is java.net.Inet4Address) {
+                        ip = addr.hostAddress ?: ip
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ThreatScanner", "Failed to get IP", e)
+        }
+
+        _uiState.value = _uiState.value.copy(networkType = type, localIp = ip)
+        
+        previousRxBytes = TrafficStats.getTotalRxBytes()
+        previousTxBytes = TrafficStats.getTotalTxBytes()
     }
 
     private fun loadThreats() {
@@ -91,55 +138,99 @@ class ThreatScannerViewModel(application: Application) : AndroidViewModel(applic
 
     private fun startScanner() {
         viewModelScope.launch {
-            // Initial traffic data
-            val initialTraffic = List(30) { (10..60).random().toFloat() }
+            val initialTraffic = List(30) { 0f }
             _uiState.value = _uiState.value.copy(trafficData = initialTraffic)
 
             while (_uiState.value.isScanning) {
                 delay(2000)
                 updateTraffic()
                 
-                // Randomly detect non-lethal protocol info based on current state
-                val proto = listOf("TCP", "UDP", "TLS", "QUIC", "DNS").random()
-                val port = listOf(80, 443, 8080, 53, 22).random()
-                _logs.add("[INFO] ${dateFormat.format(Date())} | ACTIVE CONNECTION: $proto:$port -> ESTABLISHED")
-                if (_logs.size > 25) _logs.removeAt(0)
-
-                // Detect threat with small probability
-                if (Random().nextFloat() > 0.95f) {
-                    recordThreat()
+                // Real-world subnet discovery (simplified for performance)
+                if (_uiState.value.networkType == "WIFI_SECURE") {
+                    scanSubnet(_uiState.value.localIp)
+                } else {
+                    _logs.add("[INFO] ${dateFormat.format(Date())} | ACTIVE CONNECTION -> STABLE")
+                    if (_logs.size > 25) _logs.removeAt(0)
                 }
             }
         }
     }
 
-    private fun updateTraffic() {
-        val currentTraffic = _uiState.value.trafficData.toMutableList()
-        currentTraffic.removeAt(0)
-        currentTraffic.add((10..150).random().toFloat())
-        _uiState.value = _uiState.value.copy(trafficData = currentTraffic)
+    private suspend fun scanSubnet(localIp: String) = withContext(Dispatchers.IO) {
+        try {
+            val prefix = localIp.substringBeforeLast(".")
+            // Pick a random IP in subnet to ping to prevent UI block on full subnet scan
+            val target = "$prefix.${(1..254).random()}"
+            val inetAddress = InetAddress.getByName(target)
+            if (inetAddress.isReachable(500)) {
+                withContext(Dispatchers.Main) {
+                    _logs.add("[INFO] ${dateFormat.format(Date())} | NODE FOUND: $target -> ESTABLISHED")
+                    if (_logs.size > 25) _logs.removeAt(0)
+                }
+                
+                // Test for open susceptible ports (e.g. 80, 443, 22)
+                val ports = listOf(80, 443, 22, 21, 3389)
+                for (port in ports) {
+                    try {
+                        val socket = Socket()
+                        socket.connect(InetSocketAddress(target, port), 200)
+                        socket.close()
+                        // Suspicious if weird ports are open or generic finding
+                        withContext(Dispatchers.Main) {
+                            if (port == 22 || port == 3389 || port == 21) {
+                                recordThreat("EXPOSED_PORT_$port", target)
+                            } else {
+                                _logs.add("[SECURE] ${dateFormat.format(Date())} | PORT $port OPEN ON $target")
+                                if (_logs.size > 25) _logs.removeAt(0)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // Port closed or timeout
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Unreachable
+        }
     }
 
-    private fun recordThreat() {
-        val threatTypes = listOf(
-            "ARP_SPOOFING_DETECTED",
-            "PORT_SCAN_ATTEMPT",
-            "DNS_HIJACK_VULNERABILITY",
-            "UNAUTHORIZED_NEURAL_UPLINK",
-            "SQL_INJECTION_PROBE"
-        )
-        val severity = when (Random().nextFloat()) {
-            in 0f..0.6f -> ThreatSeverity.LOW
-            in 0.6f..0.9f -> ThreatSeverity.MEDIUM
+    private fun updateTraffic() {
+        val currentRx = TrafficStats.getTotalRxBytes()
+        val currentTx = TrafficStats.getTotalTxBytes()
+        
+        val rxDiff = if (currentRx >= previousRxBytes) currentRx - previousRxBytes else 0L
+        val txDiff = if (currentTx >= previousTxBytes) currentTx - previousTxBytes else 0L
+        
+        previousRxBytes = currentRx
+        previousTxBytes = currentTx
+        
+        // Convert to KB/s approx (2 seconds delay)
+        val totalKbps = ((rxDiff + txDiff) / 1024f) / 2f
+        
+        val currentTraffic = _uiState.value.trafficData.toMutableList()
+        currentTraffic.removeAt(0)
+        currentTraffic.add(totalKbps.coerceAtMost(500f)) // Cap for graph visibility
+        _uiState.value = _uiState.value.copy(trafficData = currentTraffic)
+        
+        // Anomaly logic: sudden huge data spike
+        if (totalKbps > 5000f) { // over 5MB/s
+            recordThreat("TRAFFIC_SPIKE_DETECTED", _uiState.value.localIp)
+        }
+    }
+
+    private fun recordThreat(type: String, source: String) {
+        val severity = when {
+            type.contains("SPIKE") -> ThreatSeverity.LOW
+            type.contains("EXPOSED") -> ThreatSeverity.MEDIUM
             else -> ThreatSeverity.CRITICAL
         }
         
         val newThreat = ThreatEntry(
             timestamp = dateFormat.format(Date()),
-            type = threatTypes.random(),
+            type = type,
             severity = severity,
-            sourceIp = "192.168.1.${(2..254).random()}",
-            description = "Anomaly detected at protocol layer 4. Source vector identified."
+            sourceIp = source,
+            description = "Anomaly detected during subnet audit. Vector logged for analysis."
         )
 
         val updatedThreats = _uiState.value.threatLogs.toMutableList()

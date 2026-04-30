@@ -66,16 +66,30 @@ data class DashboardUiState(
     val notificationTone: String = "Calm Horizon"
 )
 
-class DashboardViewModel : ViewModel() {
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+
+class DashboardViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private var generativeModel: GenerativeModel? = null
 
+    private var sessionManager: com.asyria.security.data.SessionManager? = null
+
     init {
-        val envKey = System.getenv("GEMINI_API_KEY")
-        if (!envKey.isNullOrBlank()) {
+        sessionManager = com.asyria.security.data.SessionManager(application)
+        
+        val envKey = com.asyria.security.BuildConfig.GEMINI_API_KEY
+        if (envKey.isNotBlank()) {
             updateApiKey(envKey)
+        }
+        
+        viewModelScope.launch {
+            sessionManager?.themeMode?.collect { mode ->
+                val level = if (mode == com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH) ThemeLevel.WARM_STEALTH else ThemeLevel.CYBER_NOIR
+                _uiState.value = _uiState.value.copy(themeLevel = level)
+            }
         }
     }
 
@@ -151,8 +165,20 @@ class DashboardViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(language = newLang)
     }
 
+    fun changePin(oldPin: String, newPin: String): Boolean {
+        val currentPin = sessionManager?.getSecurityPin()
+        if (currentPin == oldPin) {
+            sessionManager?.setSecurityPin(newPin)
+            return true
+        }
+        return false
+    }
+
     fun setThemeLevel(level: ThemeLevel) {
-        _uiState.value = _uiState.value.copy(themeLevel = level)
+        viewModelScope.launch {
+            val mode = if (level == ThemeLevel.WARM_STEALTH) com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH else com.asyria.security.ui.theme.ThemeMode.STANDARD
+            sessionManager?.setThemeMode(mode)
+        }
     }
 
     fun setNotificationTone(tone: String) {
@@ -247,7 +273,9 @@ class DashboardViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val systemContext = "You are S.E.N.T.I.N.E.L, a high-end AI security consultant and life companion. Provide expert technical analysis on cyber-security and thoughtful spiritual guidance. Be professional, calm, and helpful to all users. Do not use personal names unless provided by the user."
+                val currentLang = _uiState.value.language
+                val langInstruction = if (currentLang == "EN") "Respond in English." else "Respond strictly in Arabic with a high-end, sophisticated tone."
+                val systemContext = "You are S.E.N.T.I.N.E.L, a high-end AI security consultant and life companion. Provide expert technical analysis on cyber-security and thoughtful spiritual guidance. Be professional, calm, and futuristic. $langInstruction Do not use personal names unless provided by the user."
                 val fullPrompt = "$systemContext\nUser: $query"
                 
                 var assistantResponse = ""

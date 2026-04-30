@@ -100,26 +100,6 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.value = _uiState.value.copy(isLoading = true)
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             
-            // If location provided, we refresh to be accurate
-            if (lat != null && lon != null) {
-                try {
-                    val response = api.getTimingsByLocation(lat, lon)
-                    val timings = response.data.timings
-                    val city = response.data.meta.timezone
-                    
-                    _uiState.value = _uiState.value.copy(
-                        timings = timings,
-                        city = city,
-                        isLoading = false
-                    )
-                    updateNextPrayer()
-                    scheduleNotifications()
-                    return@launch
-                } catch (e: Exception) {
-                    // Fallback to cache if location fails
-                }
-            }
-
             val localTimes = db.prayerDao().getPrayerTimesForDate(today)
             if (localTimes != null) {
                 _uiState.value = _uiState.value.copy(
@@ -129,35 +109,45 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 )
                 updateNextPrayer()
                 scheduleNotifications()
-            } else {
-                try {
+                return@launch
+            }
+
+            try {
+                val timings: Timings
+                val city: String
+                if (lat != null && lon != null) {
+                    val response = api.getTimingsByLocation(lat, lon)
+                    timings = response.data.timings
+                    city = response.data.meta.timezone
+                } else {
                     val response = api.getTimings("Damascus", "Syria")
-                    val timings = response.data.timings
-                    
-                    db.prayerDao().insertPrayerTimes(
-                        PrayerTimesEntity(
-                            date = today,
-                            fajr = timings.Fajr,
-                            dhuhr = timings.Dhuhr,
-                            asr = timings.Asr,
-                            maghrib = timings.Maghrib,
-                            isha = timings.Isha
-                        )
-                    )
-                    
-                    _uiState.value = _uiState.value.copy(
-                        timings = timings,
-                        city = "Al-Sham (Default)",
-                        isLoading = false
-                    )
-                    updateNextPrayer()
-                    scheduleNotifications()
-                } catch (e: Exception) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = "Sanctuary sync failed. Neural link timeout."
-                    )
+                    timings = response.data.timings
+                    city = "Al-Sham (Default)"
                 }
+                
+                db.prayerDao().insertPrayerTimes(
+                    PrayerTimesEntity(
+                        date = today,
+                        fajr = timings.Fajr,
+                        dhuhr = timings.Dhuhr,
+                        asr = timings.Asr,
+                        maghrib = timings.Maghrib,
+                        isha = timings.Isha
+                    )
+                )
+                
+                _uiState.value = _uiState.value.copy(
+                    timings = timings,
+                    city = city,
+                    isLoading = false
+                )
+                updateNextPrayer()
+                scheduleNotifications()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "Sanctuary sync failed. Neural link timeout."
+                )
             }
         }
     }

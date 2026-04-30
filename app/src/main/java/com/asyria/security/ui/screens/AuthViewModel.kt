@@ -20,7 +20,11 @@ data class AuthUiState(
     val passwordError: String? = null,
     val isAuthenticated: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.STANDARD,
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val requiresPin: Boolean = false,
+    val isPinSetup: Boolean = false,
+    val pendingPin: String = "",
+    val pinError: String? = null
 )
 
 class AuthViewModel : ViewModel() {
@@ -34,15 +38,28 @@ class AuthViewModel : ViewModel() {
         viewModelScope.launch {
             manager.isLoggedIn.collect { loggedIn ->
                 if (loggedIn) {
-                    _uiState.value = _uiState.value.copy(isAuthenticated = true)
+                    val savedPin = manager.getSecurityPin()
+                    if (savedPin != null) {
+                        _uiState.value = _uiState.value.copy(requiresPin = true)
+                    } else {
+                        // User logged in but no pin setup, force to setup
+                        _uiState.value = _uiState.value.copy(isAuthenticated = true, isPinSetup = true)
+                    }
                 }
+            }
+        }
+        viewModelScope.launch {
+            manager.themeMode.collect { mode ->
+                _uiState.value = _uiState.value.copy(themeMode = mode)
             }
         }
     }
 
     fun toggleTheme() {
         val newMode = if (_uiState.value.themeMode == ThemeMode.STANDARD) ThemeMode.ZEN else ThemeMode.STANDARD
-        _uiState.value = _uiState.value.copy(themeMode = newMode)
+        viewModelScope.launch {
+            sessionManager?.setThemeMode(newMode)
+        }
     }
 
     fun onEmailChange(newEmail: String) {
@@ -76,8 +93,16 @@ class AuthViewModel : ViewModel() {
             viewModelScope.launch {
                 // Simulation of network call for now, but enforces validation
                 kotlinx.coroutines.delay(1500)
-                _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
+                _uiState.value = _uiState.value.copy(isLoading = false)
                 sessionManager?.setLoggedIn(true)
+                
+                // Immediately check pin after login
+                val pin = sessionManager?.getSecurityPin()
+                if (pin == null) {
+                    _uiState.value = _uiState.value.copy(isPinSetup = true, isAuthenticated = true)
+                } else {
+                    _uiState.value = _uiState.value.copy(requiresPin = true)
+                }
             }
         }
     }
@@ -88,15 +113,58 @@ class AuthViewModel : ViewModel() {
             kotlinx.coroutines.delay(1000)
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                isAuthenticated = true,
                 snackbarMessage = "Authenticated via Neural-Google"
             )
             sessionManager?.setLoggedIn(true)
+            
+            val pin = sessionManager?.getSecurityPin()
+            if (pin == null) {
+                _uiState.value = _uiState.value.copy(isPinSetup = true, isAuthenticated = true)
+            } else {
+                _uiState.value = _uiState.value.copy(requiresPin = true)
+            }
         }
     }
 
     fun onGoogleSignInFailure(error: String) {
         _uiState.value = _uiState.value.copy(snackbarMessage = "System Breach: $error")
+    }
+
+    fun verifyPin(pin: String) {
+        val savedPin = sessionManager?.getSecurityPin()
+        if (savedPin == pin) {
+            _uiState.value = _uiState.value.copy(requiresPin = false, isAuthenticated = true)
+        } else {
+            _uiState.value = _uiState.value.copy(pinError = "Access Denied: Invalid PIN")
+        }
+    }
+
+    fun setupPin(pin: String) {
+        if (pin.length < 4) {
+            _uiState.value = _uiState.value.copy(pinError = "PIN must be at least 4 digits")
+            return
+        }
+        val isFirstStep = _uiState.value.pendingPin.isEmpty()
+        if (isFirstStep) {
+            _uiState.value = _uiState.value.copy(pendingPin = pin, pinError = null)
+        } else {
+            if (_uiState.value.pendingPin == pin) {
+                sessionManager?.setSecurityPin(pin)
+                _uiState.value = _uiState.value.copy(
+                    isPinSetup = false, 
+                    pendingPin = "", 
+                    pinError = null,
+                    requiresPin = false,
+                    isAuthenticated = true
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(pendingPin = "", pinError = "PINs do not match. Try again.")
+            }
+        }
+    }
+    
+    fun clearPinError() {
+        _uiState.value = _uiState.value.copy(pinError = null)
     }
 
     fun clearMessage() {

@@ -162,14 +162,7 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val prayerState by prayerViewModel.uiState.collectAsState()
     
-    val themeMode = when(uiState.themeLevel) {
-        ThemeLevel.CYBER_NOIR -> ThemeMode.STANDARD
-        ThemeLevel.WARM_STEALTH -> ThemeMode.WARM_STEALTH
-    }
-
-    SentinelTheme(mode = themeMode) {
-        DashboardContent(uiState, viewModel, prayerState)
-    }
+    DashboardContent(uiState, viewModel, prayerState)
 }
 
 @Composable
@@ -178,7 +171,9 @@ fun DashboardContent(
     viewModel: DashboardViewModel,
     prayerState: PrayerUiState
 ) {
-    val context = LocalContext.current
+    val layoutDirection = if (uiState.language == "AR") androidx.compose.ui.unit.LayoutDirection.Rtl else androidx.compose.ui.unit.LayoutDirection.Ltr
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalLayoutDirection provides layoutDirection) {
+        val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
@@ -596,6 +591,7 @@ fun DashboardContent(
                 .padding(bottom = 28.dp)
         )
     }
+    }
 }
 
 @Composable
@@ -641,7 +637,7 @@ fun NeuralBackground(
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
-                        val event = awaitPointerEvent()
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
                         touchPos = event.changes.firstOrNull()?.position
                         // Pass this to global touch if needed, but here it's local
                         if (event.changes.all { !it.pressed }) touchPos = null
@@ -804,7 +800,7 @@ fun ModuleCard(
             .pointerInput(Unit) {
                 awaitPointerEventScope {
                     while (true) {
-                        val event = awaitPointerEvent()
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
                         touchPos = event.changes.firstOrNull()?.position
                         if (event.changes.all { !it.pressed }) touchPos = null
                     }
@@ -885,161 +881,7 @@ fun ModuleCard(
     }
 }
 
-@Composable
-fun ScannerOverlay(
-    onBarcodeDetected: (String) -> Unit,
-    onClose: () -> Unit
-) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    val executor = remember { Executors.newSingleThreadExecutor() }
-
-    val infiniteTransition = rememberInfiniteTransition(label = "ScannerLaser")
-    val laserY by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "LaserPos"
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f))
-    ) {
-        AndroidView(
-            factory = { ctx ->
-                val previewView = PreviewView(ctx)
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
-                    }
-
-                    val imageAnalysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also {
-                            it.setAnalyzer(executor, ScannerUtils.BarcodeAnalyzer { barcode ->
-                                onBarcodeDetected(barcode)
-                            })
-                        }
-
-                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageAnalysis
-                        )
-                    } catch (e: Exception) {
-                        Log.e("ScannerOverlay", "Camera binding failed", e)
-                    }
-                }, ContextCompat.getMainExecutor(ctx))
-                previewView
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Blur overlay for atmosphere
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.2f))
-        )
-
-        // Custom Scanner UI Mesh
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    val strokeWidth = 2.dp.toPx()
-                    val cornerSize = 40.dp.toPx()
-                    val scanSize = 250.dp.toPx()
-                    val left = (size.width - scanSize) / 2
-                    val top = (size.height - scanSize) / 2
-                    val right = left + scanSize
-                    val bottom = top + scanSize
-
-                    // Draw focus corners
-                    val cornerPath = Path().apply {
-                        // Top Left
-                        moveTo(left, top + cornerSize)
-                        lineTo(left, top)
-                        lineTo(left + cornerSize, top)
-
-                        // Top Right
-                        moveTo(right - cornerSize, top)
-                        lineTo(right, top)
-                        lineTo(right, top + cornerSize)
-
-                        // Bottom Right
-                        moveTo(right, bottom - cornerSize)
-                        lineTo(right, bottom)
-                        lineTo(right - cornerSize, bottom)
-
-                        // Bottom Left
-                        moveTo(left + cornerSize, bottom)
-                        lineTo(left, bottom)
-                        lineTo(left, bottom - cornerSize)
-                    }
-                    drawPath(cornerPath, CyberCyan, style = Stroke(strokeWidth))
-
-                    // Laser Line
-                    val laserYPos = top + (scanSize * laserY)
-                    drawLine(
-                        color = CyberCyan,
-                        start = Offset(left + 10.dp.toPx(), laserYPos),
-                        end = Offset(right - 10.dp.toPx(), laserYPos),
-                        strokeWidth = 3.dp.toPx(),
-                        cap = StrokeCap.Round
-                    )
-                    
-                    // Draw glow behind laser
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, CyberCyan.copy(alpha = 0.3f), Color.Transparent),
-                            startY = laserYPos - 40.dp.toPx(),
-                            endY = laserYPos + 40.dp.toPx()
-                        ),
-                        topLeft = Offset(left, laserYPos - 40.dp.toPx()),
-                        size = Size(scanSize, 80.dp.toPx()),
-                        blendMode = BlendMode.Screen
-                    )
-                }
-        )
-
-        // Close Button
-        IconButton(
-            onClick = onClose,
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(16.dp)
-                .align(Alignment.TopEnd)
-                .background(VoidBlack.copy(alpha = 0.5f), CircleShape)
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-        }
-
-        Text(
-            text = "SCANNING NEURAL LINK...",
-            color = CyberCyan,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 120.dp),
-            letterSpacing = 2.sp
-        )
-    }
-}
+import com.asyria.security.ui.components.ScannerOverlay
 
 @Composable
 fun AuditReportDialog(

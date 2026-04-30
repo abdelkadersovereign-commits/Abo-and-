@@ -40,6 +40,8 @@ fun SettingsScreen(
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    
+    var showPinDialog by remember { mutableStateOf(false) }
 
     val profilePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -167,7 +169,7 @@ fun SettingsScreen(
                 title = if (uiState.language == "EN") "Change Security PIN" else "تغيير رمز PIN",
                 icon = Icons.Default.LockReset
             ) {
-                // Future Implementation for Keypad
+                showPinDialog = true
             }
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -196,7 +198,101 @@ fun SettingsScreen(
                 )
             }
         }
+        
+        if (showPinDialog) {
+            PinChangeDialog(
+                onDismiss = { showPinDialog = false },
+                viewModel = viewModel,
+                haptic = haptic
+            )
+        }
     }
+}
+
+@Composable
+fun PinChangeDialog(
+    onDismiss: () -> Unit,
+    viewModel: DashboardViewModel,
+    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback
+) {
+    var oldPin by remember { mutableStateOf("") }
+    var newPin by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    var success by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = VoidBlack,
+        titleContentColor = CyberCyan,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Text(if (success) "PIN CHANGED" else "CHANGE SECURITY PIN", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            if (success) {
+                Text("Your security PIN has been successfully updated.", color = Color.White)
+            } else {
+                Column {
+                    OutlinedTextField(
+                        value = oldPin,
+                        onValueChange = { oldPin = it },
+                        label = { Text("Old PIN", color = TextGray) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CyberCyan,
+                            unfocusedBorderColor = GlassBorder,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = newPin,
+                        onValueChange = { newPin = it },
+                        label = { Text("New PIN (Min 4 chars)", color = TextGray) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CyberCyan,
+                            unfocusedBorderColor = GlassBorder,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true
+                    )
+                    if (error != null) {
+                        Text(error!!, color = RiskRed, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (success) {
+                TextButton(onClick = onDismiss) { Text("CLOSE", color = CyberCyan) }
+            } else {
+                Button(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        if (newPin.length < 4) {
+                            error = "New PIN must be at least 4 digits."
+                        } else {
+                            if (viewModel.changePin(oldPin, newPin)) {
+                                success = true
+                            } else {
+                                error = "Old PIN is incorrect."
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
+                ) {
+                    Text("UPDATE", color = VoidBlack, fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        dismissButton = {
+            if (!success) {
+                TextButton(onClick = onDismiss) { Text("CANCEL", color = TextGray) }
+            }
+        }
+    )
 }
 
 @Composable

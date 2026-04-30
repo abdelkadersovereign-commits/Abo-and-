@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.asyria.security.ui.theme.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
@@ -44,6 +45,8 @@ fun FileGuardianScreen(onClose: () -> Unit) {
     var isScanning by remember { mutableStateOf(false) }
     var scanComplete by remember { mutableStateOf(false) }
     var safetyScore by remember { mutableIntStateOf(0) }
+    
+    val scope = rememberCoroutineScope()
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -51,15 +54,18 @@ fun FileGuardianScreen(onClose: () -> Unit) {
         uri?.let {
             selectedFileUri = it
             fileName = it.lastPathSegment?.substringAfterLast("/") ?: "SYRIA_DOC_7.dat"
-            fileSize = "2.4 MB" // Static placeholder for demo, typically calculated from content resolver
             scanComplete = false
-            triggerScan {
+            isScanning = true
+            
+            scope.launch {
+                val result = com.asyria.security.services.FileScannerService.scanFile(context, it)
+                fileName = result.fileName
+                fileSize = result.fileSize
+                safetyScore = result.safetyScore
                 isScanning = false
                 scanComplete = true
-                safetyScore = (85..100).random()
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             }
-            isScanning = true
         }
     }
 
@@ -265,11 +271,4 @@ fun ScanningRadar() {
             useCenter = true
         )
     }
-}
-
-fun triggerScan(onComplete: () -> Unit) {
-    // Artificial delay to simulate deep analysis
-    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-        onComplete()
-    }, 4000)
 }

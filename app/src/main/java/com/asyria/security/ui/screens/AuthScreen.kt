@@ -47,6 +47,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.asyria.security.R
 import com.asyria.security.data.SessionManager
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.Dimension
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.asyria.security.ui.theme.*
 
 @Composable
@@ -77,39 +81,68 @@ fun AuthScreen(
         }
     }
 
-    SentinelTheme(mode = uiState.themeMode) {
-        Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
-            containerColor = VoidBlack,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0)
-        ) { padding ->
-            Box(
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = VoidBlack,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { padding ->
+        ConstraintLayout(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.TopCenter
+                    .padding(padding)
+                    .imePadding()
             ) {
+                val (bg, header, form, toggle, footer) = createRefs()
+
                 // Background
                 if (uiState.themeMode == ThemeMode.STANDARD) {
-                    AnimatedBackground()
+                    Box(modifier = Modifier.constrainAs(bg) {
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                        width = Dimension.fillToConstraints
+                        height = Dimension.fillToConstraints
+                    }) {
+                        AnimatedBackground()
+                    }
                 }
 
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Sophisticated Welcome Header
+                Box(modifier = Modifier.constrainAs(header) {
+                    top.linkTo(parent.top)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                    width = Dimension.fillToConstraints
+                }) {
                     SophisticatedWelcome(uiState.themeMode)
-                    
-                    // Centered Login Form
-                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                }
+
+                Box(
+                    modifier = Modifier.constrainAs(form) {
+                        top.linkTo(header.bottom)
+                        bottom.linkTo(footer.top)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                        width = Dimension.fillToConstraints
+                        height = Dimension.fillToConstraints
+                    },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (uiState.requiresPin || uiState.isPinSetup) {
+                        PinEntryScreen(uiState = uiState, viewModel = viewModel, haptic = haptic)
+                    } else {
                         LoginFormScreen(uiState, { onAuthSuccess() }, viewModel, haptic)
                     }
                 }
 
-                // Zen Toggle
                 Box(
                     modifier = Modifier
                         .statusBarsPadding()
                         .padding(16.dp)
-                        .align(Alignment.TopEnd)
+                        .constrainAs(toggle) {
+                            top.linkTo(parent.top)
+                            end.linkTo(parent.end)
+                        }
                 ) {
                     IconButton(
                         onClick = {
@@ -125,11 +158,16 @@ fun AuthScreen(
                     }
                 }
                 
-                // Footer
-                BrandingFooter()
+                Box(modifier = Modifier.constrainAs(footer) {
+                    bottom.linkTo(parent.bottom)
+                    start.linkTo(parent.start)
+                    end.linkTo(parent.end)
+                    width = Dimension.fillToConstraints
+                }) {
+                    BrandingFooter()
+                }
             }
         }
-    }
 }
 
 @Composable
@@ -443,6 +481,84 @@ fun CyberTextField(
                 fontSize = 10.sp,
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp)
             )
+        }
+    }
+}
+
+@Composable
+fun PinEntryScreen(uiState: AuthUiState, viewModel: AuthViewModel, haptic: HapticFeedback) {
+    var pin by remember { mutableStateOf("") }
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.padding(24.dp)
+    ) {
+        val title = if (uiState.requiresPin) "ENTER SECURITY PIN" 
+            else if (uiState.pendingPin.isEmpty()) "CREATE SECURITY PIN" 
+            else "CONFIRM SECURITY PIN"
+            
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = CyberCyan,
+            fontWeight = FontWeight.Black,
+            letterSpacing = 2.sp
+        )
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            for (i in 0 until 4) {
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (i < pin.length) CyberCyan else GlassBorder)
+                )
+            }
+        }
+
+        if (uiState.pinError != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(uiState.pinError, color = RiskRed, fontSize = 12.sp)
+        }
+        
+        Spacer(modifier = Modifier.height(48.dp))
+        
+        val keys = listOf("1","2","3","4","5","6","7","8","9","C","0","OK")
+        var colIndex = 0
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            for (row in 0 until 4) {
+                Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                    for (col in 0 until 3) {
+                        val key = keys[colIndex++]
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(GlassWhite)
+                                .border(1.dp, GlassBorder, CircleShape)
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.clearPinError()
+                                    if (key == "C") {
+                                        if (pin.isNotEmpty()) pin = pin.dropLast(1)
+                                    } else if (key == "OK") {
+                                        if (uiState.requiresPin) viewModel.verifyPin(pin)
+                                        else viewModel.setupPin(pin)
+                                        pin = ""
+                                    } else {
+                                        if (pin.length < 4) pin += key
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = key, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
     }
 }
