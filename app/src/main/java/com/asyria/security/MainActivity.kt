@@ -12,7 +12,7 @@ import com.asyria.security.data.SessionManager
 import com.asyria.security.ui.screens.DashboardScreen
 import com.asyria.security.ui.screens.LoginScreen
 import com.asyria.security.ui.screens.SplashScreen
-import com.asyria.security.ui.theme.ASyriaTheme
+import com.asyria.security.ui.theme.SentinelTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.biometric.BiometricPrompt
@@ -43,10 +43,7 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
-            ASyriaTheme(themeMode = uiState.themeLevel.let { 
-                if (it == com.asyria.security.ui.screens.ThemeLevel.WARM_STEALTH) com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH 
-                else com.asyria.security.ui.theme.ThemeMode.STANDARD 
-            }) {
+            SentinelTheme(mode = if (uiState.themeLevel == com.asyria.security.ui.screens.ThemeLevel.WARM_STEALTH) com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH else com.asyria.security.ui.theme.ThemeMode.STANDARD) {
                 Crossfade(targetState = showSplash) {
                     if (it) {
                         SplashScreen(onTimeout = { showSplash = false })
