@@ -22,6 +22,7 @@ class SessionManager(private val context: Context) {
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val LANGUAGE = stringPreferencesKey("language")
         private const val PIN_KEY = "security_pin"
+        val BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
     }
     
     private val masterKey = MasterKey.Builder(context)
@@ -70,7 +71,17 @@ class SessionManager(private val context: Context) {
         }
     }
 
-    fun getSecurityPin(): String? {
+    val isBiometricEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+          preferences[BIOMETRIC_ENABLED] ?: false
+      }
+
+      suspend fun setBiometricEnabled(enabled: Boolean) {
+          context.dataStore.edit { preferences ->
+              preferences[BIOMETRIC_ENABLED] = enabled
+          }
+      }
+
+      fun getSecurityPin(): String? {
         return sharedPreferences.getString(PIN_KEY, null)
     }
 
