@@ -34,7 +34,9 @@ import com.asyria.security.ui.theme.GlassBorder
 import com.asyria.security.ui.theme.GlassWhite
 import com.asyria.security.ui.theme.VoidBlack
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -61,27 +63,33 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
         startAnimation = true
     }
 
+    val firebaseAuthWithGoogle = { account: GoogleSignInAccount ->
+        coroutineScope.launch {
+            try {
+                isLoading = true
+                val credential = GoogleAuthProvider.getCredential(account.idToken!!, null)
+                Firebase.auth.signInWithCredential(credential).await()
+                SessionManager(context).setLoggedIn(true)
+                onLoginSuccess()
+            } catch (e: Exception) {
+                error = "Firebase Auth failed: ${e.localizedMessage}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
         onResult = { result ->
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
-                val account = task.result
-                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
-                coroutineScope.launch {
-                    try {
-                        isLoading = true
-                        Firebase.auth.signInWithCredential(credential).await()
-                        SessionManager(context).setLoggedIn(true)
-                        onLoginSuccess()
-                    } catch (e: Exception) {
-                        error = e.localizedMessage ?: "Google Sign-In failed"
-                    } finally {
-                        isLoading = false
-                    }
-                }
+                val account = task.getResult(ApiException::class.java)!!
+                firebaseAuthWithGoogle(account)
+            } catch (e: ApiException) {
+                error = "Google Sign-In Error. Code: ${e.statusCode}. This is a DEVELOPER_ERROR, likely caused by an incorrect SHA-1 fingerprint in your Firebase project settings."
             } catch (e: Exception) {
-                error = e.localizedMessage ?: "Failed to get Google account"
+                error = "An unexpected error occurred: ${e.localizedMessage}"
             }
         }
     )
@@ -92,9 +100,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
             .background(VoidBlack),
         contentAlignment = Alignment.Center
     ) {
-        // You can add a background image here if you want
-        // Image(painter = painterResource(id = R.drawable.your_background), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -114,7 +119,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Email Field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -137,7 +141,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                 )
             )
 
-            // Password Field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -170,7 +173,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                 )
             }
 
-            // Login Button
             Button(
                 onClick = {
                     if (email.isBlank() || password.isBlank()) {
@@ -191,9 +193,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                         }
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 enabled = !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
@@ -205,37 +205,34 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                 }
             }
 
-            // Divider
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
                 Divider(color = GlassBorder, modifier = Modifier.weight(1f))
                 Text(" OR ", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = 8.dp))
                 Divider(color = GlassBorder, modifier = Modifier.weight(1f))
             }
 
-            // Google Sign-In Button
             OutlinedButton(
                 onClick = {
+                    error = null
                     try {
+                        val webClientId = context.getString(R.string.default_web_client_id)
                         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                            .requestIdToken(context.getString(R.string.default_web_client_id))
+                            .requestIdToken(webClientId)
                             .requestEmail()
                             .build()
                         val googleSignInClient = GoogleSignIn.getClient(context, gso)
-                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                        googleSignInClient.signOut().addOnCompleteListener { 
+                            googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                        }
                     } catch (e: Exception) {
-                        error = e.localizedMessage ?: "Google Sign-In configuration error"
+                        error = "Google Sign-In config error: ${e.message}"
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 enabled = !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(1.dp, GlassBorder)
             ) {
-                // You should add a Google icon drawable here for better UX
-                // Icon(painter = painterResource(id = R.drawable.ic_google_logo), contentDescription = "Google sign in", tint = Color.Unspecified)
-                // Spacer(modifier = Modifier.width(8.dp))
                 Text("Continue with Google", color = Color.White)
             }
         }
