@@ -54,13 +54,13 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                         SessionManager(context).setLoggedIn(true)
                         onLoginSuccess()
                     } catch (e: Exception) {
-                        error = e.localizedMessage
+                        error = e.localizedMessage ?: "Google Sign-In failed"
                     } finally {
                         isLoading = false
                     }
                 }
             } catch (e: Exception) {
-                error = e.localizedMessage
+                error = e.localizedMessage ?: "Failed to get Google account"
             }
         }
     )
@@ -122,11 +122,12 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                     coroutineScope.launch {
                         try {
                             isLoading = true
-                            Firebase.auth.signInWithEmailAndPassword(email.trim(), password).await()
+                            // Fixed: Added .trim() to password as well
+                            Firebase.auth.signInWithEmailAndPassword(email.trim(), password.trim()).await()
                             SessionManager(context).setLoggedIn(true)
                             onLoginSuccess()
                         } catch (e: Exception) {
-                            error = e.localizedMessage
+                            error = e.localizedMessage ?: "تسجيل الدخول فشل - تحقق من البيانات"
                         } finally {
                             isLoading = false
                         }
@@ -153,7 +154,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                         val googleSignInClient = GoogleSignIn.getClient(context, gso)
                         googleSignInLauncher.launch(googleSignInClient.signInIntent)
                     } catch (e: Exception) {
-                        error = e.localizedMessage
+                        error = e.localizedMessage ?: "Google Sign-In configuration error"
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
