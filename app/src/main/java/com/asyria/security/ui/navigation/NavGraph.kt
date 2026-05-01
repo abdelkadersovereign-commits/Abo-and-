@@ -24,7 +24,7 @@ fun NavGraph(
     ) {
         composable(Screen.Splash.route) {
             SplashScreen(
-                onSplashComplete = {
+                onTimeout = {
                     navController.navigate(Screen.Dashboard.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
