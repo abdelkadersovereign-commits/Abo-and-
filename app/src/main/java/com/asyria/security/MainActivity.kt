@@ -52,7 +52,7 @@ class MainActivity : FragmentActivity() {
                             if (isLoggedIn) {
                                 DashboardScreen(viewModel = viewModel)
                             } else {
-                                LoginScreen()
+                                LoginScreen(onLoginSuccess = { isLoggedIn = true })
                             }
                         } else {
                             // You can show a message or a different screen if biometric auth fails
