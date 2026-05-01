@@ -200,7 +200,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "Designed by ABOUDA.AL.SHEKH.YOSSEF",
-                    style = MaterialTheme.labelSmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = CyberCyan.copy(alpha = 0.4f),
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
