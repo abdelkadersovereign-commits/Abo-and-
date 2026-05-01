@@ -4,6 +4,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
+    id("com.google.gms.google-services")
 }
 
 val keystorePropertiesFile = rootProject.file("local.properties")
@@ -53,7 +54,6 @@ android {
         jvmTarget = "17"
     }
     composeOptions {
-        // تم تحديث هذه النسخة لتتوافق مع Kotlin 1.9.x ولتجنب أخطاء البناء
         kotlinCompilerExtensionVersion = "1.5.10"
     }
     kapt {
@@ -62,7 +62,6 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            // إضافة استثناءات لمنع تعارض الملفات أثناء تجميع الـ APK
             excludes += "META-INF/DEPENDENCIES"
             excludes += "META-INF/LICENSE*"
             excludes += "META-INF/NOTICE*"
@@ -71,40 +70,48 @@ android {
 }
 
 dependencies {
-    implementation("androidx.work:work-runtime:2.9.0") 
+    implementation("androidx.work:work-runtime:2.9.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.activity:activity-compose:1.8.2")
-    
-    
+
+    // Splash Screen API
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Biometric Authentication
+    implementation("androidx.biometric:biometric:1.1.0")
+
     // استخدام BOM الموحد لضمان توافق جميع نسخ Compose
     implementation(platform("androidx.compose:compose-bom:2024.02.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    
-    // مكتبات أساسية تم التأكد من وجودها لإصلاح أخطاء الصور السابقة
+
+    // مكتبات أساسية
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.constraintlayout:constraintlayout-compose:1.0.1")
 
-
     // Coil لتحميل الصور
     implementation("io.coil-kt:coil-compose:2.6.0")
-    
+
     // Gemini SDK للذكاء الاصطناعي
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
 
-    // Google Sign-In
-    implementation("com.google.android.gms:play-services-location:21.2.0")
+    // Firebase BOM - يضمن توافق جميع مكتبات Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
+    implementation("com.google.firebase:firebase-auth-ktx")
 
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     // Navigation Compose للتنقل بين الشاشات
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    
-    // DataStore لتخزين الإعدادات (مثل رمز PIN)
+
+    // DataStore لتخزين الإعدادات
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // ML Kit لفحص الـ QR والروابط
