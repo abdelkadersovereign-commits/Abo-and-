@@ -21,6 +21,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.asyria.security.R
+import com.asyria.security.data.SessionManager
 import com.asyria.security.ui.theme.CyberCyan
 import com.asyria.security.ui.theme.GlassBorder
 import com.asyria.security.ui.theme.GlassWhite
@@ -31,12 +32,13 @@ import kotlinx.coroutines.tasks.await
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
@@ -46,7 +48,16 @@ fun LoginScreen() {
                 val account = task.result
                 val credential = GoogleAuthProvider.getCredential(account.idToken, null)
                 coroutineScope.launch {
-                    Firebase.auth.signInWithCredential(credential).await()
+                    try {
+                        isLoading = true
+                        Firebase.auth.signInWithCredential(credential).await()
+                        SessionManager(context).setLoggedIn(true)
+                        onLoginSuccess()
+                    } catch (e: Exception) {
+                        error = e.localizedMessage
+                    } finally {
+                        isLoading = false
+                    }
                 }
             } catch (e: Exception) {
                 error = e.localizedMessage
@@ -69,6 +80,7 @@ fun LoginScreen() {
                 onValueChange = { email = it },
                 label = { Text(stringResource(id = R.string.email_label)) },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = CyberCyan,
                     unfocusedBorderColor = GlassBorder,
@@ -84,6 +96,7 @@ fun LoginScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                enabled = !isLoading,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = CyberCyan,
                     unfocusedBorderColor = GlassBorder,
@@ -92,27 +105,59 @@ fun LoginScreen() {
                 )
             )
             if (error != null) {
-                Text(error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                Text(
+                    text = error!!,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = { /* Handle normal login */ },
+                onClick = {
+                    if (email.isBlank() || password.isBlank()) {
+                        error = "الرجاء إدخال البريد الإلكتروني وكلمة المرور"
+                        return@Button
+                    }
+                    error = null
+                    coroutineScope.launch {
+                        try {
+                            isLoading = true
+                            Firebase.auth.signInWithEmailAndPassword(email.trim(), password).await()
+                            SessionManager(context).setLoggedIn(true)
+                            onLoginSuccess()
+                        } catch (e: Exception) {
+                            error = e.localizedMessage
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
             ) {
-                Text(stringResource(id = R.string.login))
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Text(stringResource(id = R.string.login))
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
-                    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                        .requestIdToken(context.getString(R.string.default_web_client_id))
-                        .requestEmail()
-                        .build()
-                    val googleSignInClient = GoogleSignIn.getClient(context, gso)
-                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    try {
+                        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestIdToken(context.getString(R.string.default_web_client_id))
+                            .requestEmail()
+                            .build()
+                        val googleSignInClient = GoogleSignIn.getClient(context, gso)
+                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    } catch (e: Exception) {
+                        error = e.localizedMessage
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(containerColor = GlassWhite)
             ) {
                 Text(stringResource(id = R.string.google_sign_in), color = Color.Black)
