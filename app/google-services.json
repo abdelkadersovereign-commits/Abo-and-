@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "808626566171-hrphllj9l6oj9dp4epubgs7kks1u00jk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.asyria.security",
+            "certificate_hash": "d4b9518a0f8d52518cc9f36475d971097c12c503"
+          }
+        },
+        {
           "client_id": "808626566171-7ahpl9ji56b3mpi7siomke9lhtlcbed1.apps.googleusercontent.com",
           "client_type": 3
         }

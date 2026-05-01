@@ -18,6 +18,9 @@ import kotlinx.coroutines.launch
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.ui.Modifier
 
 class MainActivity : FragmentActivity() {
     private val viewModel: com.asyria.security.ui.screens.DashboardViewModel by viewModels()
@@ -25,6 +28,8 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installSplashScreen()
+        // This line enables edge-to-edge display
+        enableEdgeToEdge()
 
         setContent {
             val uiState by viewModel.uiState.collectAsState()
@@ -42,9 +47,11 @@ class MainActivity : FragmentActivity() {
                     isAuthenticated = true
                 }
             }
-
-            SentinelTheme(mode = if (uiState.themeLevel == com.asyria.security.ui.screens.ThemeLevel.WARM_STEALTH) com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH else com.asyria.security.ui.theme.ThemeMode.STANDARD) {
-                Crossfade(targetState = showSplash) {
+            
+            SentinelTheme(
+                mode = if (uiState.themeLevel == com.asyria.security.ui.screens.ThemeLevel.WARM_STEALTH) com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH else com.asyria.security.ui.theme.ThemeMode.STANDARD) {
+                // Apply systemBarsPadding to the root Composable to handle insets
+                Crossfade(targetState = showSplash, modifier = Modifier.systemBarsPadding()) {
                     if (it) {
                         SplashScreen(onTimeout = { showSplash = false })
                     } else {
