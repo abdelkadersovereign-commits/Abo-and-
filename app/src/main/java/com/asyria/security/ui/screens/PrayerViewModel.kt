@@ -81,27 +81,27 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                 val seed = listOf(
                     SupplicationEntity(
                         category = getApplication<Application>().getString(R.string.supplication_category_morning),
-                        content = getApplication<Application>().getString(R.string.morning_supplication_content),
-                        translation = getApplication<Application>().getString(R.string.morning_supplication_translation),
-                        resonance = getApplication<Application>().getString(R.string.morning_supplication_resonance)
+                        content = getApplication<Application>().getString(R.string.morning_supplication_1_content),
+                        translation = getApplication<Application>().getString(R.string.morning_supplication_1_translation),
+                        resonance = getApplication<Application>().getString(R.string.morning_supplication_1_resonance)
                     ),
                     SupplicationEntity(
                         category = getApplication<Application>().getString(R.string.supplication_category_evening),
-                        content = getApplication<Application>().getString(R.string.evening_supplication_content),
-                        translation = getApplication<Application>().getString(R.string.evening_supplication_translation),
-                        resonance = getApplication<Application>().getString(R.string.evening_supplication_resonance)
+                        content = getApplication<Application>().getString(R.string.evening_supplication_1_content),
+                        translation = getApplication<Application>().getString(R.string.evening_supplication_1_translation),
+                        resonance = getApplication<Application>().getString(R.string.evening_supplication_1_resonance)
                     ),
                     SupplicationEntity(
                         category = getApplication<Application>().getString(R.string.supplication_category_soul_calming),
-                        content = getApplication<Application>().getString(R.string.soul_calming_supplication_content),
-                        translation = getApplication<Application>().getString(R.string.soul_calming_supplication_translation),
-                        resonance = getApplication<Application>().getString(R.string.soul_calming_supplication_resonance)
+                        content = getApplication<Application>().getString(R.string.soul_calming_supplication_1_content),
+                        translation = getApplication<Application>().getString(R.string.soul_calming_supplication_1_translation),
+                        resonance = getApplication<Application>().getString(R.string.soul_calming_supplication_1_resonance)
                     ),
                     SupplicationEntity(
                         category = getApplication<Application>().getString(R.string.supplication_category_misc),
-                        content = getApplication<Application>().getString(R.string.misc_supplication_content),
-                        translation = getApplication<Application>().getString(R.string.misc_supplication_translation),
-                        resonance = getApplication<Application>().getString(R.string.misc_supplication_resonance)
+                        content = getApplication<Application>().getString(R.string.misc_supplication_1_content),
+                        translation = getApplication<Application>().getString(R.string.misc_supplication_1_translation),
+                        resonance = getApplication<Application>().getString(R.string.misc_supplication_1_resonance)
                     )
                 )
                 db.supplicationDao().insertSupplications(seed)
