@@ -34,24 +34,42 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
         else
-          echo "gradlew not found, using gradle installed by action"
           gradle assembleDebug
         fi
 
-    - name: Print debug keystore SHA-1 (add to Firebase Console for Google Sign-In)
+    - name: "🔑 Print SHA-1 — COPY THIS AND ADD TO FIREBASE CONSOLE"
       if: always()
       run: |
-        echo "================================================"
-        echo "  DEBUG KEYSTORE SHA-1 — ADD THIS TO FIREBASE  "
-        echo "================================================"
-        keytool -list -v \
-          -keystore "$HOME/.android/debug.keystore" \
-          -alias androiddebugkey \
-          -storepass android \
-          -keypass android 2>/dev/null | grep -E "SHA1:|SHA-1:" | head -1
-        echo "================================================"
-        echo "Go to Firebase Console → Project Settings → Your App → Add fingerprint"
-        echo "================================================"
+        echo "=================================================================="
+        echo "  STEP: Add this SHA-1 to Firebase Console for Google Sign-In    "
+        echo "  Path: Firebase Console → Project Settings → Your App → Add fingerprint"
+        echo "=================================================================="
+        if [ -f "$HOME/.android/debug.keystore" ]; then
+          keytool -list -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -alias androiddebugkey \
+            -storepass android \
+            -keypass android | grep -A2 "Certificate fingerprints"
+        else
+          echo "Generating debug keystore..."
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair \
+            -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -alias androiddebugkey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass android \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+          keytool -list -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -alias androiddebugkey \
+            -storepass android \
+            -keypass android | grep -A2 "Certificate fingerprints"
+        fi
+        echo "=================================================================="
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
