@@ -2,28 +2,33 @@ package com.asyria.security.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,32 +52,36 @@ import kotlinx.coroutines.tasks.await
 fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var successMessage by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
+    var isRegisterMode by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) }
 
     var startAnimation by remember { mutableStateOf(false) }
     val alphaAnim = animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 1000)
+        animationSpec = tween(durationMillis = 1000),
+        label = "login_alpha"
     )
-
-    LaunchedEffect(Unit) {
-        startAnimation = true
-    }
+    LaunchedEffect(Unit) { startAnimation = true }
 
     val firebaseAuthWithGoogle = { account: GoogleSignInAccount ->
         coroutineScope.launch {
             try {
                 isLoading = true
+                error = null
                 val credential = GoogleAuthProvider.getCredential(account.idToken!!, null)
                 Firebase.auth.signInWithCredential(credential).await()
                 SessionManager(context).setLoggedIn(true)
                 onLoginSuccess()
             } catch (e: Exception) {
-                error = "Firebase Auth failed: ${e.localizedMessage}"
+                error = "خطأ في Firebase: ${e.localizedMessage}"
             } finally {
                 isLoading = false
             }
@@ -87,52 +96,64 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                 val account = task.getResult(ApiException::class.java)!!
                 firebaseAuthWithGoogle(account)
             } catch (e: ApiException) {
-                error = "Google Sign-In Error. Code: ${e.statusCode}. This is a DEVELOPER_ERROR, likely caused by an incorrect SHA-1 fingerprint in your Firebase project settings."
+                error = when (e.statusCode) {
+                    10 -> "Google Sign-In غير متاح في هذا الإصدار. استخدم البريد الإلكتروني وكلمة المرور."
+                    else -> "خطأ Google Sign-In (${e.statusCode}): ${e.localizedMessage}"
+                }
             } catch (e: Exception) {
-                error = "An unexpected error occurred: ${e.localizedMessage}"
+                error = e.localizedMessage
             }
         }
     )
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(VoidBlack),
+        modifier = Modifier.fillMaxSize().background(VoidBlack),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .verticalScroll(scrollState)
+                .padding(horizontal = 28.dp, vertical = 48.dp)
                 .alpha(alphaAnim.value),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-
             Text(
                 text = "A.SYRIA SECURITY",
-                fontSize = 28.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
+                textAlign = TextAlign.Center,
+                letterSpacing = 2.sp
+            )
+            Text(
+                text = if (isRegisterMode) "إنشاء حساب جديد" else "تسجيل الدخول",
+                fontSize = 14.sp,
+                color = CyberCyan.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
+            // Email
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { email = it; error = null },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Neural ID (Email)") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
                 enabled = !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = CyberCyan,
                     unfocusedBorderColor = GlassBorder,
                     focusedLabelColor = CyberCyan,
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
                     cursorColor = CyberCyan,
@@ -141,21 +162,34 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                 )
             )
 
+            // Password
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = { password = it; error = null },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Access Key (Password)") },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = if (isRegisterMode) ImeAction.Next else ImeAction.Done
+                ),
+                trailingIcon = {
+                    IconButton(onClick = { showPassword = !showPassword }) {
+                        Icon(
+                            if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = null,
+                            tint = CyberCyan
+                        )
+                    }
+                },
                 enabled = !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = CyberCyan,
                     unfocusedBorderColor = GlassBorder,
                     focusedLabelColor = CyberCyan,
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
                     cursorColor = CyberCyan,
@@ -164,53 +198,151 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                 )
             )
 
+            // Confirm password - only in register mode
+            AnimatedVisibility(visible = isRegisterMode, enter = fadeIn(), exit = fadeOut()) {
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it; error = null },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("تأكيد كلمة المرور") },
+                    singleLine = true,
+                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = CyberCyan,
+                        unfocusedBorderColor = GlassBorder,
+                        focusedLabelColor = CyberCyan,
+                        unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = CyberCyan,
+                        unfocusedContainerColor = GlassWhite,
+                        focusedContainerColor = GlassWhite,
+                    )
+                )
+            }
+
+            // Error / Success messages
             if (error != null) {
                 Text(
                     text = error!!,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 4.dp),
-                    textAlign = TextAlign.Center
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 8.dp)
+                )
+            }
+            if (successMessage != null) {
+                Text(
+                    text = successMessage!!,
+                    color = CyberCyan,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Bold
                 )
             }
 
+            // Main action button
             Button(
                 onClick = {
+                    error = null
+                    successMessage = null
                     if (email.isBlank() || password.isBlank()) {
-                        error = "Please enter both email and password."
+                        error = "الرجاء إدخال البريد الإلكتروني وكلمة المرور"
                         return@Button
                     }
-                    error = null
-                    coroutineScope.launch {
-                        try {
-                            isLoading = true
-                            Firebase.auth.signInWithEmailAndPassword(email.trim(), password.trim()).await()
-                            SessionManager(context).setLoggedIn(true)
-                            onLoginSuccess()
-                        } catch (e: Exception) {
-                            error = e.localizedMessage ?: "Login failed. Check credentials."
-                        } finally {
-                            isLoading = false
+                    if (isRegisterMode) {
+                        if (password.length < 6) {
+                            error = "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+                            return@Button
+                        }
+                        if (password != confirmPassword) {
+                            error = "كلمتا المرور غير متطابقتين"
+                            return@Button
+                        }
+                        coroutineScope.launch {
+                            try {
+                                isLoading = true
+                                Firebase.auth.createUserWithEmailAndPassword(email.trim(), password.trim()).await()
+                                SessionManager(context).setLoggedIn(true)
+                                onLoginSuccess()
+                            } catch (e: Exception) {
+                                error = when {
+                                    e.message?.contains("email-already-in-use") == true -> "هذا البريد الإلكتروني مستخدم بالفعل"
+                                    e.message?.contains("invalid-email") == true -> "البريد الإلكتروني غير صالح"
+                                    e.message?.contains("weak-password") == true -> "كلمة المرور ضعيفة جداً"
+                                    else -> e.localizedMessage ?: "فشل إنشاء الحساب"
+                                }
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    } else {
+                        coroutineScope.launch {
+                            try {
+                                isLoading = true
+                                Firebase.auth.signInWithEmailAndPassword(email.trim(), password.trim()).await()
+                                SessionManager(context).setLoggedIn(true)
+                                onLoginSuccess()
+                            } catch (e: Exception) {
+                                error = when {
+                                    e.message?.contains("user-not-found") == true -> "لا يوجد حساب بهذا البريد. أنشئ حساباً جديداً."
+                                    e.message?.contains("wrong-password") == true -> "كلمة المرور خاطئة"
+                                    e.message?.contains("invalid-email") == true -> "البريد الإلكتروني غير صالح"
+                                    e.message?.contains("invalid-credential") == true -> "البيانات غير صحيحة. تحقق من البريد وكلمة المرور."
+                                    else -> e.localizedMessage ?: "فشل تسجيل الدخول"
+                                }
+                            } finally {
+                                isLoading = false
+                            }
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 enabled = !isLoading,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Login", color = VoidBlack, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = if (isRegisterMode) "إنشاء الحساب" else "تسجيل الدخول",
+                        color = VoidBlack,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
                 }
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+            // Toggle between login / register
+            TextButton(onClick = {
+                isRegisterMode = !isRegisterMode
+                error = null
+                successMessage = null
+                password = ""
+                confirmPassword = ""
+            }) {
+                Text(
+                    text = if (isRegisterMode) "لديك حساب؟ سجّل دخولك" else "ليس لديك حساب؟ أنشئ حساباً جديداً",
+                    color = CyberCyan,
+                    fontSize = 14.sp
+                )
+            }
+
+            // Divider
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Divider(color = GlassBorder, modifier = Modifier.weight(1f))
-                Text(" OR ", color = Color.White.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = 8.dp))
+                Text(" أو ", color = Color.White.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = 8.dp), fontSize = 12.sp)
                 Divider(color = GlassBorder, modifier = Modifier.weight(1f))
             }
 
+            // Google Sign-In
             OutlinedButton(
                 onClick = {
                     error = null
@@ -221,19 +353,19 @@ fun LoginScreen(onLoginSuccess: () -> Unit = {}) {
                             .requestEmail()
                             .build()
                         val googleSignInClient = GoogleSignIn.getClient(context, gso)
-                        googleSignInClient.signOut().addOnCompleteListener { 
+                        googleSignInClient.signOut().addOnCompleteListener {
                             googleSignInLauncher.launch(googleSignInClient.signInIntent)
                         }
                     } catch (e: Exception) {
-                        error = "Google Sign-In config error: ${e.message}"
+                        error = "خطأ في إعداد Google Sign-In: ${e.message}"
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 enabled = !isLoading,
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 border = BorderStroke(1.dp, GlassBorder)
             ) {
-                Text("Continue with Google", color = Color.White)
+                Text("المتابعة باستخدام Google", color = Color.White, fontSize = 15.sp)
             }
         }
     }
