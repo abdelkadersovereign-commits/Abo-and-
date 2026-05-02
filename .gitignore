@@ -41,4 +41,3 @@ local.properties
 *.keystore
 
 # Sensitive files
-/app/google-services.json
