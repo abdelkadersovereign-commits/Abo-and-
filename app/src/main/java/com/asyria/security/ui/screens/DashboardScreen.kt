@@ -357,118 +357,17 @@ fun DashboardContent(
         }
 
         if (uiState.isAiOverlayOpen) { SentinelAIOverlay(uiState = uiState, onSendMessage = { viewModel.sendMessageToSentinel(it) }, onClose = { viewModel.toggleAiOverlay(false) }) }
-        if (prayerState.isHubOpen) { SpiritualHub(uiState = prayerState, onClose = { prayerViewModel.setHubOpen(false) }) }
+        if (prayerState.isHubOpen) { SpiritualHub(onClose = { prayerViewModel.setHubOpen(false) }) }
         if (uiState.isNetworkScannerOpen) { NetworkScannerOverlay(onClose = { viewModel.toggleNetworkScanner(false) }) }
         if (uiState.isLinkScannerOpen) { LinkScannerScreen(onClose = { viewModel.toggleLinkScanner(false) }) }
         if (uiState.isMediaScannerOpen) { MediaScannerScreen(onClose = { viewModel.toggleMediaScanner(false) }) }
         if (uiState.showSettings) { SettingsScreen(uiState = uiState, viewModel = viewModel, onClose = { viewModel.toggleSettings(false) }) }
         if (uiState.isFileGuardianOpen) { FileGuardianScreen(onClose = { viewModel.toggleFileGuardian(false) }) }
-        uiState.auditReport?.let { report -> AuditReportDialog(report = report, onDismiss = { viewModel.closeAuditReport() }, onConsultSentinel = { val consultQuery = "I scanned this URL: ${report.url}. Gemini audit says it's ${report.safetyStatus} because: ${report.analysis}. Is it a threat for a Syrian inventor's environment? Explain specifically for a bug bounty perspective."; viewModel.sendMessageToSentinel(consultQuery); viewModel.closeAuditReport(); viewModel.toggleAiOverlay(true) }) }
+        uiState.auditReport?.let { report -> AuditReportDialog(report = report, onDismiss = { viewModel.closeAuditReport() }, onConsultSentinel = { val consultQuery = "I scanned this URL: ${report.url}. Gemini audit says it's ${report.safetyStatus} because: ${report.analysis}. Is it a threat for a Syrian inventor'''s environment? Explain specifically for a bug bounty perspective."; viewModel.sendMessageToSentinel(consultQuery); viewModel.closeAuditReport(); viewModel.toggleAiOverlay(true) }) }
 
         Text(text = "A.SYRIA - FUTURE SECURED", style = MaterialTheme.typography.labelSmall.copy(brush = Brush.linearGradient(colors = listOf(TextGray.copy(alpha = 0.2f), CyberCyan.copy(alpha = 0.5f), TextGray.copy(alpha = 0.2f)), start = Offset(shimmerTranslate - 200f, 0f), end = Offset(shimmerTranslate, 0f))), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 6.sp, modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 8.dp))
         Text(text = "Designed by ABOUDA.AL.SHEKH.YOSSEF", style = MaterialTheme.typography.labelSmall.copy(brush = Brush.linearGradient(colors = listOf(TextGray.copy(alpha = 0.2f), CyberCyan.copy(alpha = 0.5f), TextGray.copy(alpha = 0.2f)), start = Offset(shimmerTranslate - 200f, 0f), end = Offset(shimmerTranslate, 0f))), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 28.dp))
     }}
-}
-
-@Composable
-fun SpiritualHub(uiState: PrayerUiState, onClose: () -> Unit) {
-    val scrollState = rememberScrollState()
-    Box(
-        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.9f)).statusBarsPadding()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(24.dp)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("الركن الروحاني", style = MaterialTheme.typography.titleLarge, color = AmberZen, fontWeight = FontWeight.Black)
-                IconButton(onClick = onClose, modifier = Modifier.clip(CircleShape).background(GlassWhite)) { Icon(Icons.Default.Close, contentDescription = null, tint = Color.White) }
-            }
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            if (uiState.isLoading) {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AmberZen)
-                }
-            } else if (uiState.error != null) {
-                Text(uiState.error, color = RiskRed, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(16.dp))
-            } else {
-                PrayerTimesSection(uiState)
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-            Text("مكتبة الأدعية", style = MaterialTheme.typography.titleMedium, color = OffWhite, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            Spacer(modifier = Modifier.height(16.dp))
-            SupplicationLibrary(uiState.supplications)
-        }
-    }
-}
-
-@Composable
-fun PrayerTimesSection(uiState: PrayerUiState) {
-    Column {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-            Column {
-                Text(uiState.nextPrayerName, color = AmberZen, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text(uiState.city, color = TextGray, fontSize = 12.sp, letterSpacing = 1.sp)
-            }
-            Text(uiState.countdown, color = AmberZen, fontSize = 28.sp, fontWeight = FontWeight.Light, fontFamily = FontFamily.Monospace)
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        Divider(color = GlassBorder)
-        Spacer(modifier = Modifier.height(16.dp))
-        uiState.timings?.let {
-            PrayerRow("الفجر", it.Fajr, uiState.nextPrayerName == "الفجر")
-            PrayerRow("الظهر", it.Dhuhr, uiState.nextPrayerName == "الظهر")
-            PrayerRow("العصر", it.Asr, uiState.nextPrayerName == "العصر")
-            PrayerRow("المغرب", it.Maghrib, uiState.nextPrayerName == "المغرب")
-            PrayerRow("العشاء", it.Isha, uiState.nextPrayerName == "العشاء")
-        }
-    }
-}
-
-@Composable
-fun PrayerRow(name: String, time: String, isNext: Boolean) {
-    val color = if (isNext) AmberZen else OffWhite
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text(name, color = color, fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal)
-        Text(time, color = color, fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
-    }
-}
-
-@Composable
-fun SupplicationLibrary(supplications: List<SupplicationEntity>) {
-    val grouped = supplications.groupBy { it.category }
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        grouped.forEach { (category, supps) ->
-            Column {
-                Text(category, color = CyberCyan, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 8.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    supps.forEach { supplication ->
-                        SupplicationCard(supplication)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SupplicationCard(supplication: SupplicationEntity) {
-    var expanded by remember { mutableStateOf(false) }
-    Surface(
-        modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
-        color = GlassWhite, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, GlassBorder)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(supplication.content, color = OffWhite, maxLines = if (expanded) Int.MAX_VALUE else 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.animateContentSize())
-            if (expanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(supplication.translation, color = TextGray, style = MaterialTheme.typography.bodySmall)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(supplication.resonance, color = CyberCyan.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-            }
-        }
-    }
 }
 
 @Composable
@@ -598,7 +497,7 @@ fun SecuritySettingsPanel(apiKey: String, onApiKeyChange: (String) -> Unit, onCl
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = { uriHandler.openUri("https://aistudio.google.com/app/apikey") }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = GlassWhite), shape = RoundedCornerShape(12.dp)) { Icon(Icons.Default.Key, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp)); Spacer(modifier = Modifier.width(8.dp)); Text("GET FREE FLASH KEY", color = Color.White) }
                 Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "A.SYRIA uses Gemini's 1.5 Flash model for high-speed local security heuristics. Ensure your key is from Google AI Studio for optimal sync.", style = MaterialTheme.typography.bodySmall, color = TextGray, textAlign = TextAlign.Center)
+                Text(text = "A.SYRIA uses Gemini'''s 1.5 Flash model for high-speed local security heuristics. Ensure your key is from Google AI Studio for optimal sync.", style = MaterialTheme.typography.bodySmall, color = TextGray, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.height(32.dp))
                 Button(onClick = onClose, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = CyberCyan), shape = RoundedCornerShape(12.dp)) { Text("SAVE & INITIALIZE", color = VoidBlack, fontWeight = FontWeight.Bold) }
             }
