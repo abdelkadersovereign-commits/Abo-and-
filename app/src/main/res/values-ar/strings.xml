@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">A.SYRIA</string>
+    <string name="login">تسجيل الدخول</string>
+    <string name="sign_up">انشاء حساب</string>
+    <string name="email_label">المعرف العصبي (البريد الإلكتروني)</string>
+    <string name="password_label">مفتاح الوصول (كلمة المرور)</string>
+    <string name="google_sign_in">المتابعة باستخدام جوجل</string>
+    <string name="designer_name">عبوده الشيخ يوسف</string>
+    <string name="welcome_sentinel">أهلاً بك يا سينتينل</string>
+
+    <!-- AdhanWorker Strings -->
+    <string name="adhan_default_prayer_name">الأذان</string>
+    <string name="adhan_notification_channel_name">تنبيهات الأذان</string>
+    <string name="adhan_notification_channel_description">إشعارات لأوقات الصلاة والآيات اليومية</string>
+    <string name="quran_verse_1">وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ</string>
+    <string name="quran_verse_2">أَلَا بِذِكْرِ اللِهِ تَطْمَئِنُّ الْقُلُوبُ</string>
+    <string name="quran_verse_3">إِنَّ مَعَ الْعُسْرِ يُسْرًا</string>
+    <string name="quran_verse_4">وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ</string>
+    <string name="prayer_time_notification_title">حان الآن موعد صلاة %1$s</string>
+
+    <!-- PrayerViewModel Strings -->
+    <string name="detecting_sovereignty">جاري تحديد السيادة...</string>
+    <string name="local_sanctuary_cache">ذاكرة المخبأ المحلية</string>
+    <string name="default_city">الشام (افتراضي)</string>
+    <string name="damascus">دمشق</string>
+    <string name="syria">سوريا</string>
+    <string name="error_sanctuary_sync">فشل مزامنة الملاذ. انقضت مهلة الرابط العصبي.</string>
+
+    <!-- Prayer Names -->
+    <string name="prayer_fajr">الفجر</string>
+    <string name="prayer_dhuhr">الظهر</string>
+    <string name="prayer_asr">العصر</string>
+    <string name="prayer_maghrib">المغرب</string>
+    <string name="prayer_isha">العشاء</string>
+
+    <!-- Supplication Categories -->
+    <string name="supplication_category_morning_evening">أذكار الصباح والمساء</string>
+    <string name="supplication_category_quranic">أدعية قرآنية</string>
+    <string name="supplication_category_comprehensive">أدعية شاملة</string>
+    <string name="supplication_category_soul_calming">للطمأنينة وراحة البال</string>
+    <string name="supplication_category_wisdom">للعلم والحكمة</string>
+    <string name="supplication_category_forgiveness">للمغفرة</string>
+    <string name="supplication_category_family">للأهل والوالدين</string>
+    <string name="supplication_category_protection">للحماية</string>
+    <string name="supplication_category_misc">متفرقات</string>
+
+</resources>

@@ -471,8 +471,6 @@ fun SupplicationCard(supplication: SupplicationEntity) {
     }
 }
 
-
-
 @Composable
 fun NeuralBackground(status: SystemStatus, tiltX: Float, tiltY: Float, bootComplete: Boolean, isSpiritualMode: Boolean = false) {
     val statusColor = when { isSpiritualMode -> AmberZen; status == SystemStatus.SECURE -> CyberCyan; status == SystemStatus.SCANNING -> NeonBlue; else -> RiskRed }
