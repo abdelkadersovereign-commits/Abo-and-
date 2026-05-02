@@ -441,7 +441,7 @@ fun SupplicationLibrary(supplications: List<SupplicationEntity>) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         grouped.forEach { (category, supps) ->
             Column {
-                Text(category, color = CyberCyan, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 8.dp))
+                Text(stringResource(id = category), color = CyberCyan, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 8.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     supps.forEach { supplication ->
                         SupplicationCard(supplication)
@@ -470,6 +470,7 @@ fun SupplicationCard(supplication: SupplicationEntity) {
         }
     }
 }
+
 
 @Composable
 fun NeuralBackground(status: SystemStatus, tiltX: Float, tiltY: Float, bootComplete: Boolean, isSpiritualMode: Boolean = false) {
