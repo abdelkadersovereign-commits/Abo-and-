@@ -1,5 +1,6 @@
 package com.asyria.security.ui.screens
 
+import android.media.MediaPlayer
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.asyria.security.ui.theme.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.text.style.TextAlign
+import com.asyria.security.R
 
 @Composable
 fun SettingsScreen(
@@ -40,8 +41,6 @@ fun SettingsScreen(
     val haptic = LocalHapticFeedback.current
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    
-    var showPinDialog by remember { mutableStateOf(false) }
 
     val profilePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -156,7 +155,7 @@ fun SettingsScreen(
 
             // System Audio
             SettingsCategory(title = if (uiState.language == "EN") "AUDIO RESONANCE" else "الرنين الصوتي")
-            ToneSelector(uiState.notificationTone) { tone ->
+            ToneSelector(currentTone = uiState.notificationTone) { tone ->
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 viewModel.setNotificationTone(tone)
             }
@@ -174,13 +173,6 @@ fun SettingsScreen(
                     viewModel.toggleBiometric(!uiState.isBiometricEnabled)
                 }
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            SecurityActionItem(
-                title = if (uiState.language == "EN") "Change Security PIN" else "تغيير رمز PIN",
-                icon = Icons.Default.LockReset
-            ) {
-                showPinDialog = true
-            }
 
             Spacer(modifier = Modifier.height(48.dp))
 
@@ -208,101 +200,7 @@ fun SettingsScreen(
                 )
             }
         }
-        
-        if (showPinDialog) {
-            PinChangeDialog(
-                onDismiss = { showPinDialog = false },
-                viewModel = viewModel,
-                haptic = haptic
-            )
-        }
     }
-}
-
-@Composable
-fun PinChangeDialog(
-    onDismiss: () -> Unit,
-    viewModel: DashboardViewModel,
-    haptic: androidx.compose.ui.hapticfeedback.HapticFeedback
-) {
-    var oldPin by remember { mutableStateOf("") }
-    var newPin by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var success by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = VoidBlack,
-        titleContentColor = CyberCyan,
-        shape = RoundedCornerShape(24.dp),
-        title = {
-            Text(if (success) "PIN CHANGED" else "CHANGE SECURITY PIN", fontWeight = FontWeight.Bold)
-        },
-        text = {
-            if (success) {
-                Text("Your security PIN has been successfully updated.", color = Color.White)
-            } else {
-                Column {
-                    OutlinedTextField(
-                        value = oldPin,
-                        onValueChange = { oldPin = it },
-                        label = { Text("Old PIN", color = TextGray) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CyberCyan,
-                            unfocusedBorderColor = GlassBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = newPin,
-                        onValueChange = { newPin = it },
-                        label = { Text("New PIN (Min 4 chars)", color = TextGray) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CyberCyan,
-                            unfocusedBorderColor = GlassBorder,
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        singleLine = true
-                    )
-                    if (error != null) {
-                        Text(error!!, color = RiskRed, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            if (success) {
-                TextButton(onClick = onDismiss) { Text("CLOSE", color = CyberCyan) }
-            } else {
-                Button(
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        if (newPin.length < 4) {
-                            error = "New PIN must be at least 4 digits."
-                        } else {
-                            if (viewModel.changePin(oldPin, newPin)) {
-                                success = true
-                            } else {
-                                error = "Old PIN is incorrect."
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = CyberCyan)
-                ) {
-                    Text("UPDATE", color = VoidBlack, fontWeight = FontWeight.Bold)
-                }
-            }
-        },
-        dismissButton = {
-            if (!success) {
-                TextButton(onClick = onDismiss) { Text("CANCEL", color = TextGray) }
-            }
-        }
-    )
 }
 
 @Composable
@@ -397,8 +295,23 @@ fun SecurityToggle(title: String, subtitle: String, isActive: Boolean, onToggle:
 
 @Composable
 fun ToneSelector(currentTone: String, onSelect: (String) -> Unit) {
+    val context = LocalContext.current
     val tones = listOf("CALM_CHIME", "NEURAL_PULSE", "ZEN_RESONANCE", "STEALTH_CLICK")
-    
+    val toneResMap = mapOf(
+        "CALM_CHIME" to R.raw.calm_chime,
+        "NEURAL_PULSE" to R.raw.neural_pulse,
+        "ZEN_RESONANCE" to R.raw.zen_resonance,
+        "STEALTH_CLICK" to R.raw.stealth_click
+    )
+
+    var currentlyPlaying: MediaPlayer? by remember { mutableStateOf(null) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            currentlyPlaying?.release()
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = GlassWhite,
@@ -407,16 +320,27 @@ fun ToneSelector(currentTone: String, onSelect: (String) -> Unit) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             tones.forEach { tone ->
+                val toneResId = toneResMap[tone]
+                val action = { 
+                    onSelect(tone)
+                    toneResId?.let { resId ->
+                        currentlyPlaying?.release() // Release previous player if any
+                        val mediaPlayer = MediaPlayer.create(context, resId)
+                        mediaPlayer.setOnCompletionListener { mp -> mp.release() }
+                        mediaPlayer.start()
+                        currentlyPlaying = mediaPlayer
+                    }
+                }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelect(tone) }
+                        .clickable { action() }
                         .padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = currentTone == tone,
-                        onClick = { onSelect(tone) },
+                        onClick = { action() },
                         colors = RadioButtonDefaults.colors(selectedColor = CyberCyan)
                     )
                     Spacer(modifier = Modifier.width(12.dp))

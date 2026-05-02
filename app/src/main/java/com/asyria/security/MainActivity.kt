@@ -19,7 +19,6 @@ import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.ui.Modifier
 
 class MainActivity : FragmentActivity() {
@@ -50,8 +49,8 @@ class MainActivity : FragmentActivity() {
             
             SentinelTheme(
                 mode = if (uiState.themeLevel == com.asyria.security.ui.screens.ThemeLevel.WARM_STEALTH) com.asyria.security.ui.theme.ThemeMode.WARM_STEALTH else com.asyria.security.ui.theme.ThemeMode.STANDARD) {
-                // Apply systemBarsPadding to the root Composable to handle insets
-                Crossfade(targetState = showSplash, modifier = Modifier.systemBarsPadding()) {
+                // The systemBarsPadding modifier has been removed from here to allow edge-to-edge display
+                Crossfade(targetState = showSplash) {
                     if (it) {
                         SplashScreen(onTimeout = { showSplash = false })
                     } else {
