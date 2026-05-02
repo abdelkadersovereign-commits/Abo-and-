@@ -263,6 +263,41 @@ fun EnhancedAzkarModule(supplications: List<SupplicationEntity>) {
     }
 }
 
+@Composable
+fun SupplicationCard(item: com.asyria.security.data.prayer.SupplicationEntity) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = GlassWhite,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, GlassBorder)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = item.resonance.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = AmberZen,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = item.content,
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Right,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = item.translation,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextGray,
+                lineHeight = 16.sp
+            )
+        }
+    }
+}
 
 @Composable
 fun SpiritualBottomNav(currentTab: Int, onTabChange: (Int) -> Unit) {
