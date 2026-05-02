@@ -30,16 +30,16 @@
           }
         },
         {
-          "client_id": "808626566171-7ahpl9ji56b3mpi7siomke9lhtlcbed1.apps.googleusercontent.com",
-          "client_type": 3
-        },
-        {
-          "client_id": "808626566171-08sd5ce0ggu9an0fjua4oarv150jj6hr.apps.googleusercontent.com",
+          "client_id": "808626566171-tb50brpbvrn4an3u1vqcefhmhjf5vc5s.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.asyria.security",
             "certificate_hash": "a4391f0cf5316c77458032c90661782a1b8035ea"
           }
+        },
+        {
+          "client_id": "808626566171-7ahpl9ji56b3mpi7siomke9lhtlcbed1.apps.googleusercontent.com",
+          "client_type": 3
         }
       ],
       "api_key": [
