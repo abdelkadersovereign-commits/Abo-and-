@@ -17,6 +17,7 @@ package com.asyria.security.ui.screens
   import androidx.compose.ui.graphics.Color
   import androidx.compose.ui.graphics.vector.ImageVector
   import androidx.compose.ui.platform.LocalHapticFeedback
+  import androidx.compose.ui.text.font.FontFamily
   import androidx.compose.ui.text.font.FontWeight
   import androidx.compose.ui.text.style.TextAlign
   import androidx.compose.ui.draw.alpha
@@ -49,7 +50,7 @@ package com.asyria.security.ui.screens
 
               Box(modifier = Modifier.weight(1f)) {
                   Crossfade(targetState = activeTab, label = "TabContent") { tab ->
-                      when(tab) {
+                      when (tab) {
                           0 -> DetailedPrayerTimes(uiState)
                           1 -> EnhancedAzkarModule(uiState.supplications)
                       }
@@ -125,7 +126,6 @@ package com.asyria.security.ui.screens
               .padding(horizontal = 24.dp),
           horizontalAlignment = Alignment.CenterHorizontally
       ) {
-          // Error state
           if (uiState.error != null && uiState.timings == null) {
               Surface(
                   modifier = Modifier.fillMaxWidth(),
@@ -137,25 +137,45 @@ package com.asyria.security.ui.screens
                       modifier = Modifier.padding(20.dp),
                       horizontalAlignment = Alignment.CenterHorizontally
                   ) {
-                      Icon(Icons.Default.WifiOff, contentDescription = null, tint = Color.Red.copy(alpha = 0.7f), modifier = Modifier.size(32.dp))
+                      Icon(
+                          Icons.Default.WifiOff,
+                          contentDescription = null,
+                          tint = Color.Red.copy(alpha = 0.7f),
+                          modifier = Modifier.size(32.dp)
+                      )
                       Spacer(modifier = Modifier.height(8.dp))
-                      Text(text = uiState.error, color = Color.Red.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                      Text(
+                          text = uiState.error,
+                          color = Color.Red.copy(alpha = 0.8f),
+                          style = MaterialTheme.typography.bodySmall,
+                          textAlign = TextAlign.Center
+                      )
                       Spacer(modifier = Modifier.height(4.dp))
-                      Text(text = "يرجى التحقق من الاتصال بالإنترنت", color = TextGray, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
+                      Text(
+                          text = "يرجى التحقق من الاتصال بالإنترنت",
+                          color = TextGray,
+                          style = MaterialTheme.typography.labelSmall,
+                          textAlign = TextAlign.Center
+                      )
                   }
               }
               Spacer(modifier = Modifier.height(24.dp))
           }
 
-          // Loading state
           if (uiState.isLoading) {
-              Box(modifier = Modifier.fillMaxWidth().height(180.dp), contentAlignment = Alignment.Center) {
+              Box(
+                  modifier = Modifier
+                      .fillMaxWidth()
+                      .height(180.dp),
+                  contentAlignment = Alignment.Center
+              ) {
                   CircularProgressIndicator(color = AmberZen)
               }
           } else {
-              // Next Prayer Hero Card
               Surface(
-                  modifier = Modifier.fillMaxWidth().height(180.dp),
+                  modifier = Modifier
+                      .fillMaxWidth()
+                      .height(180.dp),
                   shape = RoundedCornerShape(32.dp),
                   color = AmberZen.copy(alpha = 0.05f),
                   border = BorderStroke(2.dp, Brush.linearGradient(listOf(AmberZen, Color.Transparent, AmberZen)))
@@ -179,10 +199,14 @@ package com.asyria.security.ui.screens
                               style = MaterialTheme.typography.displayMedium,
                               color = Color.White,
                               fontWeight = FontWeight.Light,
-                              fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                              fontFamily = FontFamily.Monospace
                           )
                       } else {
-                          Text(text = "جارٍ تحميل مواقيت الصلاة...", color = TextGray, style = MaterialTheme.typography.bodyMedium)
+                          Text(
+                              text = "جارٍ تحميل مواقيت الصلاة...",
+                              color = TextGray,
+                              style = MaterialTheme.typography.bodyMedium
+                          )
                       }
                   }
               }
@@ -208,9 +232,13 @@ package com.asyria.security.ui.screens
                   items(prayers.size) { index ->
                       val (name, time) = prayers[index]
                       val isNext = name == uiState.nextPrayerName
-                      val arabicName = when(name) {
-                          "Fajr" -> "الفجر"; "Dhuhr" -> "الظهر"; "Asr" -> "العصر"
-                          "Maghrib" -> "المغرب"; "Isha" -> "العشاء"; else -> name
+                      val arabicName = when (name) {
+                          "Fajr" -> "الفجر"
+                          "Dhuhr" -> "الظهر"
+                          "Asr" -> "العصر"
+                          "Maghrib" -> "المغرب"
+                          "Isha" -> "العشاء"
+                          else -> name
                       }
                       Surface(
                           modifier = Modifier.fillMaxWidth(),
@@ -224,13 +252,21 @@ package com.asyria.security.ui.screens
                               verticalAlignment = Alignment.CenterVertically
                           ) {
                               Column {
-                                  Text(text = name, color = if (isNext) AmberZen else Color.White, fontWeight = FontWeight.Bold)
-                                  Text(text = arabicName, color = TextGray, style = MaterialTheme.typography.labelSmall)
+                                  Text(
+                                      text = name,
+                                      color = if (isNext) AmberZen else Color.White,
+                                      fontWeight = FontWeight.Bold
+                                  )
+                                  Text(
+                                      text = arabicName,
+                                      color = TextGray,
+                                      style = MaterialTheme.typography.labelSmall
+                                  )
                               }
                               Text(
                                   text = time.substringBefore(" "),
                                   color = if (isNext) AmberZen else TextGray,
-                                  fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                  fontFamily = FontFamily.Monospace,
                                   fontWeight = if (isNext) FontWeight.Bold else FontWeight.Normal,
                                   style = MaterialTheme.typography.titleMedium
                               )
@@ -244,7 +280,6 @@ package com.asyria.security.ui.screens
 
   @Composable
   fun EnhancedAzkarModule(supplications: List<SupplicationEntity>) {
-      // Derive categories dynamically from actual supplications data
       val categories = remember(supplications) {
           supplications.map { it.category }.distinct()
       }
@@ -264,7 +299,6 @@ package com.asyria.security.ui.screens
               return@Column
           }
 
-          // Category Selector — uses ACTUAL category names from database
           Row(
               modifier = Modifier
                   .fillMaxWidth()
@@ -318,6 +352,84 @@ package com.asyria.security.ui.screens
   }
 
   @Composable
+  fun SupplicationCard(supplication: SupplicationEntity) {
+      var isExpanded by remember { mutableStateOf(false) }
+
+      Surface(
+          modifier = Modifier
+              .fillMaxWidth()
+              .clickable { isExpanded = !isExpanded },
+          color = GlassWhite,
+          shape = RoundedCornerShape(24.dp),
+          border = BorderStroke(1.dp, GlassBorder)
+      ) {
+          Column(modifier = Modifier.padding(20.dp)) {
+              Text(
+                  text = supplication.content,
+                  style = MaterialTheme.typography.bodyLarge,
+                  color = Color.White,
+                  fontWeight = FontWeight.Medium,
+                  textAlign = TextAlign.End,
+                  lineHeight = 32.sp,
+                  modifier = Modifier.fillMaxWidth()
+              )
+
+              AnimatedVisibility(
+                  visible = isExpanded,
+                  enter = fadeIn() + expandVertically(),
+                  exit = fadeOut() + shrinkVertically()
+              ) {
+                  Column {
+                      Spacer(modifier = Modifier.height(16.dp))
+                      HorizontalDivider(color = GlassBorder, thickness = 1.dp)
+                      Spacer(modifier = Modifier.height(16.dp))
+                      Text(
+                          text = supplication.translation,
+                          style = MaterialTheme.typography.bodySmall,
+                          color = TextGray,
+                          lineHeight = 20.sp
+                      )
+                      if (supplication.resonance.isNotBlank()) {
+                          Spacer(modifier = Modifier.height(12.dp))
+                          Surface(
+                              color = AmberZen.copy(alpha = 0.1f),
+                              shape = RoundedCornerShape(8.dp)
+                          ) {
+                              Text(
+                                  text = supplication.resonance,
+                                  modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                  style = MaterialTheme.typography.labelSmall,
+                                  color = AmberZen,
+                                  fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                              )
+                          }
+                      }
+                  }
+              }
+
+              Spacer(modifier = Modifier.height(8.dp))
+              Row(
+                  modifier = Modifier.fillMaxWidth(),
+                  horizontalArrangement = Arrangement.SpaceBetween,
+                  verticalAlignment = Alignment.CenterVertically
+              ) {
+                  Text(
+                      text = supplication.category,
+                      style = MaterialTheme.typography.labelSmall,
+                      color = AmberZen.copy(alpha = 0.6f)
+                  )
+                  Icon(
+                      imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                      contentDescription = if (isExpanded) "Collapse" else "Expand",
+                      tint = TextGray,
+                      modifier = Modifier.size(16.dp)
+                  )
+              }
+          }
+      }
+  }
+
+  @Composable
   fun SpiritualBottomNav(currentTab: Int, onTabChange: (Int) -> Unit) {
       Surface(
           modifier = Modifier
@@ -356,7 +468,7 @@ package com.asyria.security.ui.screens
       isSelected: Boolean,
       onClick: () -> Unit
   ) {
-      val alpha by animateFloatAsState(if (isSelected) 1f else 0.4f, label = "Alpha")
+      val itemAlpha by animateFloatAsState(if (isSelected) 1f else 0.4f, label = "Alpha")
       val color = if (isSelected) AmberZen else TextGray
 
       Column(
@@ -366,10 +478,10 @@ package com.asyria.security.ui.screens
               .padding(vertical = 8.dp, horizontal = 24.dp),
           horizontalAlignment = Alignment.CenterHorizontally
       ) {
-          Icon(icon, contentDescription = label, tint = color.copy(alpha = alpha))
+          Icon(icon, contentDescription = label, tint = color.copy(alpha = itemAlpha))
           Text(
               text = label,
-              color = color.copy(alpha = alpha),
+              color = color.copy(alpha = itemAlpha),
               style = MaterialTheme.typography.labelSmall,
               fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
           )
