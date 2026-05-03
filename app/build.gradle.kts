@@ -105,7 +105,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     
     // Gemini SDK للذكاء الاصطناعي
-    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.1.1")
