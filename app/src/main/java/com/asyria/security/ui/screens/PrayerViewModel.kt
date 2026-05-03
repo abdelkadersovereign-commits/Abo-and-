@@ -43,10 +43,17 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(application)
     
     private val api = Retrofit.Builder()
-        .baseUrl(AladhanApi.BASE_URL)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(AladhanApi::class.java)
+          .baseUrl(AladhanApi.BASE_URL)
+          .addConverterFactory(GsonConverterFactory.create())
+          .client(
+              okhttp3.OkHttpClient.Builder()
+                  .connectTimeout(20, TimeUnit.SECONDS)
+                  .readTimeout(20, TimeUnit.SECONDS)
+                  .writeTimeout(20, TimeUnit.SECONDS)
+                  .build()
+          )
+          .build()
+          .create(AladhanApi::class.java)
 
     private var timer: Timer? = null
 
@@ -169,7 +176,7 @@ class PrayerViewModel(application: Application) : AndroidViewModel(application) 
                     timings = response.data.timings
                     city = response.data.meta.timezone
                 } else {
-                    val response = api.getTimings(getApplication<Application>().getString(R.string.damascus), getApplication<Application>().getString(R.string.syria))
+                    val response = api.getTimings(getApplication<Application>().getString(R.string.damascus), getApplication<Application>().getString(R.string.syria), 4)
                     timings = response.data.timings
                     city = getApplication<Application>().getString(R.string.default_city)
                 }
