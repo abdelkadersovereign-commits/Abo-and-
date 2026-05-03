@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.map
 
 class SentinelAiService(apiKey: String) {
     private val model = GenerativeModel(
-        modelName = "gemini-2.0-flash",
+        modelName = "gemini-3.0-flash-preview",
         apiKey = apiKey,
         generationConfig = generationConfig {
             temperature = 0.7f
