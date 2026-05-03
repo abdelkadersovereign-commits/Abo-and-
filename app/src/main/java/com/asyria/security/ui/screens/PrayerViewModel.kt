@@ -36,9 +36,6 @@ data class PrayerUiState(
 
 
   object DamascusPrayerCalculator {
-      private const val LAT = 33.5138
-      private const val LON = 36.2765
-      private const val TIMEZONE = 3.0
       private const val FAJR_ANGLE = 18.0
       private const val ISHA_ANGLE = 17.0
 
@@ -61,16 +58,16 @@ data class PrayerUiState(
           return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + b - 1524.5
       }
 
-      private fun hourAngle(angle: Double, decl: Double): Double {
-          val c = (-sinD(angle) - sinD(decl) * sinD(LAT)) / (cosD(decl) * cosD(LAT))
+      private fun hourAngle(angle: Double, decl: Double, lat: Double): Double {
+          val c = (-sinD(angle) - sinD(decl) * sinD(lat)) / (cosD(decl) * cosD(lat))
           return if (Math.abs(c) > 1.0) Double.NaN else arccosD(c) / 15.0
       }
 
-      private fun asrHA(shadowFactor: Double, decl: Double): Double {
-          val angle = arccotD(shadowFactor + Math.tan(toRad(Math.abs(LAT - decl))))
-          val c = (sinD(angle) - sinD(decl) * sinD(LAT)) / (cosD(decl) * cosD(LAT))
-          return if (Math.abs(c) > 1.0) Double.NaN else arccosD(c) / 15.0
-      }
+      private fun asrHA(shadowFactor: Double, decl: Double, lat: Double): Double {
+            val angle = arccotD(shadowFactor + Math.tan(toRad(Math.abs(lat - decl))))
+            val c = (sinD(angle) - sinD(decl) * sinD(lat)) / (cosD(decl) * cosD(lat))
+            return if (Math.abs(c) > 1.0) Double.NaN else arccosD(c) / 15.0
+        }
 
       private fun fmt(h: Double): String {
           if (h.isNaN()) return "--:--"
@@ -80,27 +77,27 @@ data class PrayerUiState(
           return String.format("%02d:%02d", hour, min)
       }
 
-      fun calculate(year: Int, month: Int, day: Int): Timings {
-          val jd = julianDate(year, month, day)
-          val d = jd - 2451545.0
-          val g = fixAngle(357.529 + 0.98560028 * d)
-          val q = fixAngle(280.459 + 0.98564736 * d)
-          val l = fixAngle(q + 1.915 * sinD(g) + 0.020 * sinD(2.0 * g))
-          val e = 23.439 - 0.00000036 * d
-          val ra = arctan2D(cosD(e) * sinD(l), cosD(l)) / 15.0
-          val decl = arcsinD(sinD(e) * sinD(l))
-          val eqt = q / 15.0 - ra
-          val transit = 12.0 + TIMEZONE - LON / 15.0 - eqt
-          val sunHa = hourAngle(0.8333, decl)
-          return Timings(
-              Fajr    = fmt(transit - hourAngle(FAJR_ANGLE, decl)),
-              Dhuhr   = fmt(transit),
-              Asr     = fmt(transit + asrHA(1.0, decl)),
-              Maghrib = fmt(transit + sunHa),
-              Isha    = fmt(transit + hourAngle(ISHA_ANGLE, decl))
-          )
-      }
-  }
+      fun calculate(year: Int, month: Int, day: Int, lat: Double = 33.5138, lon: Double = 36.2765, tzOffset: Double = 3.0): Timings {
+            val jd = julianDate(year, month, day)
+            val d = jd - 2451545.0
+            val g = fixAngle(357.529 + 0.98560028 * d)
+            val q = fixAngle(280.459 + 0.98564736 * d)
+            val l = fixAngle(q + 1.915 * sinD(g) + 0.020 * sinD(2.0 * g))
+            val e = 23.439 - 0.00000036 * d
+            val ra = arctan2D(cosD(e) * sinD(l), cosD(l)) / 15.0
+            val decl = arcsinD(sinD(e) * sinD(l))
+            val eqt = q / 15.0 - ra
+            val transit = 12.0 + tzOffset - lon / 15.0 - eqt
+            val sunHa = hourAngle(0.8333, decl, lat)
+            return Timings(
+                Fajr    = fmt(transit - hourAngle(FAJR_ANGLE, decl, lat)),
+                Dhuhr   = fmt(transit),
+                Asr     = fmt(transit + asrHA(1.0, decl, lat)),
+                Maghrib = fmt(transit + sunHa),
+                Isha    = fmt(transit + hourAngle(ISHA_ANGLE, decl, lat))
+            )
+        }
+    }
 
   class PrayerViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(PrayerUiState(city = application.getString(R.string.detecting_sovereignty)))
@@ -268,13 +265,17 @@ data class PrayerUiState(
                 updateNextPrayer()
                 scheduleNotifications()
             } catch (e: Exception) {
-                // API unavailable → local on-device calculation for Damascus
+                // API unavailable → local on-device calculation using user coordinates
                 try {
                     val cal2 = java.util.Calendar.getInstance()
+                    val userLat = lat ?: 33.5138
+                    val userLon = lon ?: 36.2765
+                    val tzOffset = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()).toDouble() / 3600000.0
                     val localTimings = DamascusPrayerCalculator.calculate(
                         cal2.get(java.util.Calendar.YEAR),
                         cal2.get(java.util.Calendar.MONTH) + 1,
-                        cal2.get(java.util.Calendar.DAY_OF_MONTH)
+                        cal2.get(java.util.Calendar.DAY_OF_MONTH),
+                        userLat, userLon, tzOffset
                     )
                     db.prayerDao().insertPrayerTimes(
                         PrayerTimesEntity(date = today, fajr = localTimings.Fajr,
