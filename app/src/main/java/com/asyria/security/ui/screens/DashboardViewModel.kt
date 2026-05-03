@@ -113,7 +113,7 @@ package com.asyria.security.ui.screens
           _uiState.value = _uiState.value.copy(geminiApiKey = key)
           if (key.isNotBlank()) {
               generativeModel = GenerativeModel(
-                  modelName = "gemini-1.5-flash",
+                  modelName = "gemini-2.0-flash",
                   apiKey = key
               )
           }
