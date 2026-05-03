@@ -31,6 +31,10 @@ import coil.compose.AsyncImage
 import com.asyria.security.ui.theme.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.asyria.security.R
+  import androidx.compose.foundation.text.KeyboardActions
+  import androidx.compose.foundation.text.KeyboardOptions
+  import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+  import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun SettingsScreen(
@@ -120,40 +124,112 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // AI Intelligence
-            SettingsCategory(title = if (uiState.language == "EN") "AI INTELLIGENCE" else "ذكاء SENTINEL")
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = GlassWhite,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, GlassBorder)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = if (uiState.language == "EN") "Neural API Key (Gemini)" else "مفتاح الربط العصبي",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = uiState.geminiApiKey,
-                        onValueChange = { viewModel.updateApiKey(it) },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Enter API Key...", color = TextGray, fontSize = 12.sp) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = CyberCyan,
-                            unfocusedBorderColor = GlassBorder,
-                            focusedTextColor = OffWhite,
-                            unfocusedTextColor = OffWhite
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                }
-            }
+              SettingsCategory(title = if (uiState.language == "EN") "AI INTELLIGENCE" else "ذكاء SENTINEL")
 
-            Spacer(modifier = Modifier.height(32.dp))
+              val localApiKey = remember { mutableStateOf(uiState.geminiApiKey) }
+              LaunchedEffect(uiState.geminiApiKey) {
+                  if (uiState.geminiApiKey.isNotBlank() && localApiKey.value.isBlank()) {
+                      localApiKey.value = uiState.geminiApiKey
+                  }
+              }
+              val keyboardController = LocalSoftwareKeyboardController.current
+              val isKeyActive = uiState.geminiApiKey.isNotBlank()
 
-            // System Audio
+              Surface(
+                  modifier = Modifier.fillMaxWidth(),
+                  color = GlassWhite,
+                  shape = RoundedCornerShape(16.dp),
+                  border = BorderStroke(1.dp, if (isKeyActive) CyberCyan.copy(alpha = 0.5f) else GlassBorder)
+              ) {
+                  Column(modifier = Modifier.padding(16.dp)) {
+                      Row(
+                          verticalAlignment = Alignment.CenterVertically,
+                          horizontalArrangement = Arrangement.SpaceBetween,
+                          modifier = Modifier.fillMaxWidth()
+                      ) {
+                          Text(
+                              text = if (uiState.language == "EN") "Neural API Key (Gemini)" else "مفتاح الربط العصبي",
+                              color = Color.White,
+                              fontWeight = FontWeight.Bold,
+                              fontSize = 14.sp
+                          )
+                          if (isKeyActive) {
+                              Surface(
+                                  color = Color(0xFF00FF88).copy(alpha = 0.15f),
+                                  shape = RoundedCornerShape(8.dp)
+                              ) {
+                                  Text(
+                                      text = "● ACTIVE",
+                                      color = Color(0xFF00FF88),
+                                      fontSize = 10.sp,
+                                      fontWeight = FontWeight.Bold,
+                                      modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                  )
+                              }
+                          }
+                      }
+                      Spacer(modifier = Modifier.height(4.dp))
+                      Text(
+                          text = if (uiState.language == "EN") "Free key at: aistudio.google.com" else "مفتاحك المجاني من: aistudio.google.com",
+                          color = AmberZen.copy(alpha = 0.7f),
+                          fontSize = 10.sp
+                      )
+                      Spacer(modifier = Modifier.height(10.dp))
+                      OutlinedTextField(
+                          value = localApiKey.value,
+                          onValueChange = { localApiKey.value = it },
+                          modifier = Modifier.fillMaxWidth(),
+                          singleLine = true,
+                          placeholder = { Text("AIzaSy...", color = TextGray, fontSize = 12.sp) },
+                          colors = OutlinedTextFieldDefaults.colors(
+                              focusedBorderColor = CyberCyan,
+                              unfocusedBorderColor = GlassBorder,
+                              focusedTextColor = OffWhite,
+                              unfocusedTextColor = OffWhite
+                          ),
+                          shape = RoundedCornerShape(12.dp),
+                          keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                          keyboardActions = KeyboardActions(onDone = {
+                              keyboardController?.hide()
+                              viewModel.updateApiKey(localApiKey.value.trim())
+                          }),
+                          trailingIcon = if (localApiKey.value.isNotEmpty()) {
+                              {
+                                  IconButton(onClick = { localApiKey.value = "" }) {
+                                      Icon(
+                                          Icons.Default.Clear,
+                                          contentDescription = "Clear",
+                                          tint = TextGray,
+                                          modifier = Modifier.size(16.dp)
+                                      )
+                                  }
+                              }
+                          } else null
+                      )
+                      Spacer(modifier = Modifier.height(12.dp))
+                      Button(
+                          onClick = {
+                              keyboardController?.hide()
+                              viewModel.updateApiKey(localApiKey.value.trim())
+                          },
+                          modifier = Modifier.fillMaxWidth(),
+                          colors = ButtonDefaults.buttonColors(containerColor = CyberCyan),
+                          shape = RoundedCornerShape(12.dp)
+                      ) {
+                          Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
+                          Spacer(modifier = Modifier.width(8.dp))
+                          Text(
+                              text = if (uiState.language == "EN") "Activate SENTINEL AI" else "تفعيل ذكاء SENTINEL",
+                              fontWeight = FontWeight.Bold,
+                              color = VoidBlack
+                          )
+                      }
+                  }
+              }
+
+              Spacer(modifier = Modifier.height(32.dp))
+
+              // System Audio
             SettingsCategory(title = if (uiState.language == "EN") "AUDIO RESONANCE" else "الرنين الصوتي")
             ToneSelector(currentTone = uiState.notificationTone) { tone ->
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
