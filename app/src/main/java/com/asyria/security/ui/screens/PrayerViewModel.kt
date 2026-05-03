@@ -1,8 +1,16 @@
 package com.asyria.security.ui.screens
 
+import android.Manifest
 import android.app.Application
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
+import androidx.work.*
+import com.asyria.security.R
 import com.asyria.security.data.prayer.*
+import com.asyria.security.worker.NotificationWorker
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,16 +19,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat
 import java.util.*
-
-import androidx.work.*
-import com.asyria.security.R
-import com.asyria.security.worker.NotificationWorker
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
 import java.util.concurrent.TimeUnit
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.core.content.ContextCompat
 
 data class PrayerUiState(
     val timings: Timings? = null,
@@ -77,7 +76,7 @@ data class PrayerUiState(
           return String.format("%02d:%02d", hour, min)
       }
 
-      fun calculate(year: Int, month: Int, day: Int, lat: Double = 33.5138, lon: Double = 36.2765, tzOffset: Double = 3.0): Timings {
+      fun calculate(year: Int, month: Int, day: Int, lat: Double, lon: Double, tzOffset: Double): Timings {
             val jd = julianDate(year, month, day)
             val d = jd - 2451545.0
             val g = fixAngle(357.529 + 0.98560028 * d)
@@ -130,19 +129,49 @@ data class PrayerUiState(
 
     private fun initSpiritualCore() {
         viewModelScope.launch {
-            if (ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
-                    .addOnSuccessListener { location ->
-                        if (location != null) {
-                            fetchPrayerTimes(location.latitude, location.longitude)
-                        } else {
-                            fetchPrayerTimes() // Fallback to default
-                        }
-                    }
-                    .addOnFailureListener { fetchPrayerTimes() }
-            } else {
-                fetchPrayerTimes()
+            val app = getApplication<Application>()
+            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+            // First, try to load from the local database cache
+            val localTimes = db.prayerDao().getPrayerTimesForDate(today)
+            if (localTimes != null) {
+                _uiState.value = _uiState.value.copy(
+                    timings = Timings(localTimes.fajr, localTimes.dhuhr, localTimes.asr, localTimes.maghrib, localTimes.isha),
+                    isLoading = false,
+                    city = app.getString(R.string.local_sanctuary_cache)
+                )
+                updateNextPrayer()
+                scheduleNotifications()
+                return@launch
             }
+
+            // If no cache, start loading and get location
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            if (ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = app.getString(R.string.error_sanctuary_sync)
+                )
+                return@launch
+            }
+
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null)
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        fetchPrayerTimes(location.latitude, location.longitude)
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = app.getString(R.string.error_sanctuary_sync)
+                        )
+                    }
+                }
+                .addOnFailureListener {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = app.getString(R.string.error_sanctuary_sync)
+                    )
+                }
         }
     }
 
@@ -216,35 +245,16 @@ data class PrayerUiState(
         _uiState.value = _uiState.value.copy(isHubOpen = open)
     }
 
-    fun fetchPrayerTimes(lat: Double? = null, lon: Double? = null) {
+    fun fetchPrayerTimes(lat: Double, lon: Double) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            val app = getApplication<Application>()
             val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            
-            val localTimes = db.prayerDao().getPrayerTimesForDate(today)
-            if (localTimes != null) {
-                _uiState.value = _uiState.value.copy(
-                    timings = Timings(localTimes.fajr, localTimes.dhuhr, localTimes.asr, localTimes.maghrib, localTimes.isha),
-                    isLoading = false,
-                    city = getApplication<Application>().getString(R.string.local_sanctuary_cache)
-                )
-                updateNextPrayer()
-                scheduleNotifications()
-                return@launch
-            }
 
             try {
-                val timings: Timings
-                val city: String
-                if (lat != null && lon != null) {
-                    val response = api.getTimingsByLocation(lat, lon)
-                    timings = response.data.timings
-                    city = response.data.meta.timezone
-                } else {
-                    val response = api.getTimings(getApplication<Application>().getString(R.string.damascus), getApplication<Application>().getString(R.string.syria), 4)
-                    timings = response.data.timings
-                    city = getApplication<Application>().getString(R.string.default_city)
-                }
+                // Primary Method: Fetch from Aladhan API
+                val response = api.getTimingsByLocation(lat, lon)
+                val timings = response.data.timings
+                val city = response.data.meta.timezone
                 
                 db.prayerDao().insertPrayerTimes(
                     PrayerTimesEntity(
@@ -265,17 +275,15 @@ data class PrayerUiState(
                 updateNextPrayer()
                 scheduleNotifications()
             } catch (e: Exception) {
-                // API unavailable → local on-device calculation using user coordinates
+                // Fallback Method: Local on-device calculation
                 try {
-                    val cal2 = java.util.Calendar.getInstance()
-                    val userLat = lat ?: 33.5138
-                    val userLon = lon ?: 36.2765
+                    val cal = java.util.Calendar.getInstance()
                     val tzOffset = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()).toDouble() / 3600000.0
                     val localTimings = DamascusPrayerCalculator.calculate(
-                        cal2.get(java.util.Calendar.YEAR),
-                        cal2.get(java.util.Calendar.MONTH) + 1,
-                        cal2.get(java.util.Calendar.DAY_OF_MONTH),
-                        userLat, userLon, tzOffset
+                        cal.get(java.util.Calendar.YEAR),
+                        cal.get(java.util.Calendar.MONTH) + 1,
+                        cal.get(java.util.Calendar.DAY_OF_MONTH),
+                        lat, lon, tzOffset
                     )
                     db.prayerDao().insertPrayerTimes(
                         PrayerTimesEntity(date = today, fajr = localTimings.Fajr,
@@ -283,7 +291,10 @@ data class PrayerUiState(
                             maghrib = localTimings.Maghrib, isha = localTimings.Isha)
                     )
                     _uiState.value = _uiState.value.copy(
-                        timings = localTimings, city = "\u062f\u0645\u0634\u0642 (\u0645\u062d\u0644\u064a)", isLoading = false, error = null
+                        timings = localTimings,
+                        city = app.getString(R.string.local_sanctuary_cache), 
+                        isLoading = false, 
+                        error = null
                     )
                     updateNextPrayer()
                     scheduleNotifications()
