@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Sentinel" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#010103</item>
+
+    <!-- الثيم الأساسي — Light -->
+    <style name="Theme.Sentinel" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowBackground">#010103</item>
     </style>
+
+    <!-- ثيم SplashScreen -->
+    <style name="Theme.Sentinel.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#010103</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Sentinel</item>
+    </style>
+
 </resources>
